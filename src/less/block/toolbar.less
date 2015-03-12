@@ -1,0 +1,51 @@
+@import "../config/config";
+@import "../lib/mixin";
+
+.rs-toolbar {
+  height: @widgetSize;
+  width: @width;
+
+  background-color: #E0E0E0;
+
+  .box-shadow(0, 4px, 4px, 0, rgba(0, 0, 0, 0.2));
+  z-index: 1;
+  position: absolute;
+
+  line-height: 1;
+
+  .rs-toolbar-button {
+    border: none;
+    background: none;
+
+    height: @widgetSize + 1px;
+    width: 40px;
+
+    box-sizing: border-box;
+
+    padding: 0;
+    margin: -2px 0 0 0;
+    line-height: 1;
+
+    display: inline-block;
+
+    * {
+      color: #6D6D6D;
+    }
+
+    &:hover {
+      background-color: @backgroundSecondColor;
+
+      border-bottom: solid 4px @decorationColor;
+    }
+
+    outline: none;
+
+    &.rs-button__border-left {
+      border-left: solid 1px rgba(255, 255, 255, 0.3);
+    }
+
+    &.rs-button__border-right {
+      border-right: solid 1px rgba(255, 255, 255, 0.3);
+    }
+  }
+}

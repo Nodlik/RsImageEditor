@@ -1,0 +1,25 @@
+@import "lib/normalize";
+@import "lib/font-awesome/font-awesome";
+
+@import "config/config";
+@import "lib/mixin";
+
+.rs-editor {
+  font-family: @mainFont;
+  font-size: @defaultFontSize;
+
+  width: @width;
+
+  border: solid 1px @backgroundSecondColor;
+  padding: 2px;
+  margin: 0 auto;
+}
+
+.rs-editor-block {
+  position: relative;
+  overflow: hidden;
+}
+
+.rs-helpers-block {
+  display: none;
+}

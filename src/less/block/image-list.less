@@ -1,0 +1,64 @@
+@import "../config/config";
+@import "../lib/mixin";
+
+.rs-image-list {
+  .flex(flex-start, flex-start);
+
+  .flex-wrap(wrap);
+
+  padding: 20px 0;
+
+  img {
+    display: none;
+  }
+
+  .rs-image {
+    margin: 10px 18px;
+    width: 150px;
+    height: 170px;
+
+    padding: 12px 0 0 0;
+
+    border: solid 3px @backgroundColor;
+
+    background-color: @darkColor;
+
+    > * {
+      width: 150px;
+    }
+
+    .flex(space-between, space-between);
+    .flex-wrap(wrap);
+
+    .rs-image-block {
+      width: 150px;
+      height: 170px - 50px;
+
+      .flex-grow(2);
+
+      canvas {
+        display: block;
+        margin: 0 auto;
+      }
+    }
+
+    .rs-image-data {
+      .flex(space-between, center);
+
+      height: 50px;
+      background-color: @lightColor;
+
+      padding: 0 10px;
+
+      .rs-image-data__name {
+        font-size: 80%;
+      }
+
+      * {
+        color: @lightFontColor;
+
+        font-size: 90%;
+      }
+    }
+  }
+}

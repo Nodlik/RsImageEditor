@@ -1,0 +1,19 @@
+{
+  "name": "RsImageEditor",
+  "version": "0.0.0",
+  "dependencies": {
+    "grunt-contrib-clean": "latest",
+    "grunt": "latest",
+    "grunt-contrib-uglify": "latest",
+    "grunt-contrib-watch": "latest",
+    "grunt-contrib-copy": "latest",
+    "grunt-typescript": "latest",
+    "grunt-contrib-less": "latest"
+  },
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
