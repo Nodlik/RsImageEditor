@@ -1,12 +1,5 @@
-/// <reference path="../../ts/Module/HtmlModule.ts" />
-/// <reference path="../../ts/Module/ModuleType.ts" />
-/// <reference path="../../ts/Module/ModuleType.ts" />
-/// <reference path="ResizeAction.ts" />
-
 module Modules {
     export class ResizeModule implements Core.HtmlModule, Core.ActionModule {
-        actions: ResizeAction[] = [];
-
         html() {
             return 'good';
         }
@@ -27,8 +20,12 @@ module Modules {
             return null;
         }
 
-        process() {
-            var i: Core.RsImage = new Core.RsImage();
+        name() {
+            return 'resize';
+        }
+
+        process(): Promise<Core.RsImage> {
+            var i: Core.RsImage = new Core.RsImage('1', '2', '3');
 
             var act = new ResizeAction(i);
             return i.getActionDispatcher().process(act);

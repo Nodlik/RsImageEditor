@@ -16,16 +16,20 @@ module Core {
             return action.execute();
         }
 
-        undo() {
+        undo(): Promise<RsImage> {
             if (this.current > 0) {
-                this.actions[this.current--].unExecute();
+                return this.actions[this.current--].unExecute();
             }
+
+            return Promise.resolve();
         }
 
-        redo() {
+        redo(): Promise<RsImage> {
             if (this.current < this.actions.length - 1) {
-                this.actions[this.current++].execute();
+                return this.actions[this.current++].execute();
             }
+
+            return Promise.resolve();
         }
     }
 }

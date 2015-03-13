@@ -6,18 +6,18 @@ module.exports = (grunt) ->
     less:
       default:
         options:
-          paths: ['src/less']
+          paths: ['theme/default']
           cleancss: true
           report: 'gzip'
           compress: true,
           yuicompress: true,
           optimization: 2
         files:
-          'build/css/rs-image-editor.css': 'src/less/rs-editor.less'
+          'build/css/rs-editor-default.css': 'theme/default/rs-editor.less'
 
     watch:
       typeescript:
-        files: ['src/ts/**/*.ts']
+        files: ['src/**/*.ts']
         tasks: ['typescript']
       nunjucksjs:
         files: ['src/modules/**/*.twig']
@@ -31,8 +31,9 @@ module.exports = (grunt) ->
           target: 'es5'
           references: [
             "packages/reference/**/*.d.ts",
-            "src/modules/**/*.ts",
-            "src/ts/**/*.ts"
+            "src/Modules/**/*.ts",
+            "src/UI/**/*.ts",
+            "src/Core/**/*.ts"
           ]
 
     nunjucks:
@@ -60,12 +61,24 @@ module.exports = (grunt) ->
             dest: 'build/'
             flatten: true,
             filter: 'isFile'
-        ,
-          expand: true
-          src: 'packages/js/jquery/dist/jquery.min.map'
-          dest: 'build/'
-          flatten: true,
-          filter: 'isFile'
+          ,
+            expand: true
+            src: 'packages/js/jquery/dist/jquery.min.map'
+            dest: 'build/'
+            flatten: true,
+            filter: 'isFile'
+          ,
+            expand: true
+            src: 'packages/js/underscore/underscore-min.js'
+            dest: 'build/'
+            flatten: true,
+            filter: 'isFile'
+          ,
+            expand: true
+            src: 'packages/js/underscore/underscore-min.map'
+            dest: 'build/'
+            flatten: true,
+            filter: 'isFile'
         ]
 
     clean:
@@ -75,7 +88,7 @@ module.exports = (grunt) ->
     uglify:
       dist:
         files:
-          'build/rs-image-editor.js': [
+          'build/rs-image-editor.min.js': [
             'build/rs-image-editor.js'
           ]
 
@@ -91,6 +104,6 @@ module.exports = (grunt) ->
     'clean:build'
     'less'
     'typescript'
-    #'uglify'
+    'uglify'
     'copy'
   ])

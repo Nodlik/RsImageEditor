@@ -1,0 +1,46 @@
+module UI {
+    export class Page {
+        constructor(private editor: Editor, private imageCollection: Core.ImageCollection, private parent: Page = null) {
+
+        }
+
+        hasParent(): boolean {
+            return (this.parent != null);
+        }
+
+        getParent(): Page {
+            return this.parent;
+        }
+
+        appendImage(image: Core.RsImage) {
+            this.imageCollection.add(image);
+        }
+
+        getView(): ViewInerface {
+            if (this.imageCollection.getImages().length == 1) {
+                return new SingleView(this, this.imageCollection.getImages()[0]);
+            }
+
+            return new GridView(this, this.imageCollection);
+        }
+
+        getToolbar(): Toolbar {
+            if (this.imageCollection.getImages().length == 1) {
+                return new SingleToolbar(this);
+            }
+
+            return new GridToolbar(this);
+        }
+
+        render() {
+            this.getToolbar().render();
+
+            this.getImagePlace().html("");
+            this.getView().render();
+        }
+
+        getImagePlace(): JQuery {
+            return this.editor.getImagePlace();
+        }
+    }
+}

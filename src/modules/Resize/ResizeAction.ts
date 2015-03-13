@@ -1,11 +1,6 @@
-/// <reference path="../../ts/Action/EditorAction.ts" />
-/// <reference path="../../ts/Image/RsImage.ts" />
-
 module Modules {
     export class ResizeAction implements Core.EditorAction {
-        public image: Core.RsImage;
-
-        constructor(image: Core.RsImage) {
+        constructor(public image: Core.RsImage) {
             this.image = image;
         }
 

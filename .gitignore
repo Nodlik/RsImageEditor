@@ -2,4 +2,4 @@ node_modules
 .idea
 index.html
 packages/*
-src/less/lib/font-awesome/*
+theme/default/lib/font-awesome/*
