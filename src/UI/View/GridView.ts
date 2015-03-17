@@ -1,13 +1,21 @@
 module UI {
-    export class GridView implements ViewInerface {
+    export class GridView implements ViewInterface {
         constructor(private page: Page, private imageCollection: Core.ImageCollection) {
             
+        }
+
+        type(): Core.ModuleViewType {
+            return Core.ModuleViewType.GRID;
         }
 
         render() {
             this.imageCollection.getImages().forEach((img) => {
                 this.renderImage(img);
             });
+        }
+
+        selected(): Core.RsImage[] {
+            return [];
         }
 
         private renderImage(image: Core.RsImage) {

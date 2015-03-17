@@ -1,11 +1,13 @@
 module UI {
-    export class GridToolbar implements Toolbar {
-        constructor(private page: Page) {
-            
+    export class GridToolbar extends Toolbar {
+        constructor(page: Page, editor: Core.RsImageEditor) {
+            super(page, editor);
         }
 
         render() {
+            super.render();
 
+            this.renderModuleToolbar(Core.ModuleViewType.GRID, this.$toolbar);
         }
     }
 }

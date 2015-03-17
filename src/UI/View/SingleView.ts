@@ -1,44 +1,37 @@
 module UI {
-    export class SingleView implements ViewInerface {
+    export class SingleView implements ViewInterface {
         private canvas: HTMLCanvasElement = null;
         private context: CanvasRenderingContext2D;
-        private htmlImage: HTMLImageElement;
 
         constructor(private page: Page, private image: Core.RsImage) {
 
         }
 
+        type(): Core.ModuleViewType {
+            return Core.ModuleViewType.SINGLE;
+        }
+
         render() {
-            this.getCanvas().then(
-                () => {
-                    this.renderImage();
-                }
-            );
+            this.getCanvas();
+            this.renderImage();
+        }
+
+        selected(): Core.RsImage[] {
+            return [this.image];
         }
 
         private renderImage() {
-            this.context.drawImage(this.htmlImage, 0, 0);
+            this.context.putImageData(this.image.getImageData(), 0, 0);
         }
 
-        private getCanvas(): Promise<boolean> {
-            return new Promise<boolean>(
-                (resolve, reject) =>
-                    {
-                        this.page.getImagePlace().append($('<canvas id="' + this.image.getId() + '"></canvas>'));
-                        this.canvas = <HTMLCanvasElement>this.page.getImagePlace().find('#' + this.image.getId())[0];
+        private getCanvas() {
+            this.page.getImagePlace().append($('<canvas id="' + this.image.getId() + '"></canvas>'));
+            this.canvas = <HTMLCanvasElement>this.page.getImagePlace().find('#' + this.image.getId())[0];
 
-                        this.image.getImage().then(
-                            (img: HTMLImageElement) => {
-                                this.htmlImage = img;
-                                this.canvas.width = img.width;
-                                this.canvas.height = img.height;
+            this.canvas.width = this.image.getWidth();
+            this.canvas.height = this.image.getHeight();
 
-                                this.context = this.canvas.getContext('2d');
-                                resolve(true);
-                            }
-                        )
-                    }
-            );
+            this.context = this.canvas.getContext('2d');
         }
     }
 }

@@ -1,3 +1,5 @@
+/// <reference path="ModuleType.ts"/>
+
 module Core {
     export interface EditorModule {
         icon(): string;

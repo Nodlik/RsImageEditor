@@ -1,11 +1,16 @@
 module UI {
-    export class SingleToolbar implements Toolbar {
-        constructor(private page: Page) {
-            
+    export class SingleToolbar extends Toolbar {
+        constructor(page: Page, editor: Core.RsImageEditor) {
+            super(page, editor);
         }
 
         render() {
+            super.render();
 
+            this.renderModuleToolbar(Core.ModuleViewType.SINGLE, this.$toolbar);
+            this.renderCommonButton(this.$toolbar);
+
+            this.editor.UI().initToolbar(this.$toolbar);
         }
     }
 }

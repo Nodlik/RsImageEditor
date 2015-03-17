@@ -1,3 +1,8 @@
+/// <reference path="../UI/Editor.ts"/>
+/// <reference path="Image/ImageManager.ts"/>
+/// <reference path="Module/ModuleManager.ts"/>
+/// <reference path="Loader/ImageLoader.ts"/>
+
 module Core {
     export class RsImageEditor {
         private ui: UI.Editor;

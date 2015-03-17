@@ -25,22 +25,22 @@ module.exports = (grunt) ->
 
     typescript:
       base:
-        src: 'src/ts/RsImageEditor.ts'
+        src: 'src/Core/RsImageEditor.ts'
         dest: 'build/rs-image-editor.js'
         options:
           target: 'es5'
           references: [
             "packages/reference/**/*.d.ts",
             "src/Modules/**/*.ts",
-            "src/UI/**/*.ts",
-            "src/Core/**/*.ts"
+            #"src/UI/**/*.ts",
+            #"src/Core/**/*.ts"
           ]
 
     nunjucks:
       precompile:
-        baseDir: 'src/coffee'
-        src: 'src/coffee/**/*.twig'
-        dest: 'src/js/templates/view.html.js'
+        baseDir: 'src/Modules'
+        src: 'src/Modules/**/*.twig'
+        dest: 'build/template.js'
         options:
           name: (path) ->
             path.replace(/^.*[\\\/]/, '')
@@ -49,8 +49,10 @@ module.exports = (grunt) ->
       main:
         files: [
             expand: true
-            src: ['fonts/**']
-            dest: 'build/'
+            src: ['theme/default/fonts/**']
+            dest: 'build/fonts/'
+            flatten: true,
+            filter: 'isFile'
           ,
             expand: true
             src: ['img/**']
@@ -79,6 +81,12 @@ module.exports = (grunt) ->
             dest: 'build/'
             flatten: true,
             filter: 'isFile'
+          ,
+            expand: true
+            src: 'packages/js/nunjucks/browser/nunjucks.min.js'
+            dest: 'build/'
+            flatten: true,
+            filter: 'isFile'
         ]
 
     clean:
@@ -89,6 +97,7 @@ module.exports = (grunt) ->
       dist:
         files:
           'build/rs-image-editor.min.js': [
+            'build/template.js'
             'build/rs-image-editor.js'
           ]
 
@@ -98,12 +107,14 @@ module.exports = (grunt) ->
   grunt.loadNpmTasks 'grunt-contrib-uglify'
   grunt.loadNpmTasks 'grunt-contrib-copy'
   grunt.loadNpmTasks 'grunt-typescript'
+  grunt.loadNpmTasks 'grunt-nunjucks'
 
 
   grunt.registerTask('build', [
     'clean:build'
     'less'
     'typescript'
+    'nunjucks'
     'uglify'
     'copy'
   ])

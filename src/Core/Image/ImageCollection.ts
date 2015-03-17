@@ -1,3 +1,6 @@
+/// <reference path="ImageManager.ts"/>
+/// <reference path="RsImage.ts"/>
+
 module Core {
     export class ImageCollection {
         private images: RsImage[] = [];

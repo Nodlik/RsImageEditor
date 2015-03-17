@@ -1,3 +1,11 @@
+/// <reference path="View/ViewInterface.ts"/>
+/// <reference path="View/SingleView.ts"/>
+/// <reference path="View/GridView.ts"/>
+
+/// <reference path="Toolbar/Toolbar.ts"/>
+/// <reference path="Toolbar/GridToolbar.ts"/>
+/// <reference path="Toolbar/SingleToolbar.ts"/>
+
 module UI {
     export class Page {
         constructor(private editor: Editor, private imageCollection: Core.ImageCollection, private parent: Page = null) {
@@ -16,7 +24,7 @@ module UI {
             this.imageCollection.add(image);
         }
 
-        getView(): ViewInerface {
+        getView(): ViewInterface {
             if (this.imageCollection.getImages().length == 1) {
                 return new SingleView(this, this.imageCollection.getImages()[0]);
             }
@@ -26,10 +34,10 @@ module UI {
 
         getToolbar(): Toolbar {
             if (this.imageCollection.getImages().length == 1) {
-                return new SingleToolbar(this);
+                return new SingleToolbar(this, this.editor.getEditor());
             }
 
-            return new GridToolbar(this);
+            return new GridToolbar(this, this.editor.getEditor());
         }
 
         render() {

@@ -1,19 +1,29 @@
+/// <reference path="../../Core/Module/HtmlModule.ts"/>
+/// <reference path="../../Core/RsImageEditor.ts"/>
+
 module Modules {
-    export class ResizeModule implements Core.HtmlModule, Core.ActionModule {
+    export class ResizeModule implements Core.HtmlModule
+    {
+        constructor(private editor: Core.RsImageEditor) {}
+
         html() {
-            return 'good';
+            return nunjucks.render('resize.dialog.twig', {});
         }
 
-        init($el) {
+        init($el: JQuery) {
+            $el.find('.m_resize-ok').click(() => {
+                this.doAction($el.find('.m_resize-width').val(), $el.find('.m_resize-height').val());
 
+                return false;
+            });
         }
 
         icon() {
-            return 'fa fa-icon'
+            return 'fa fa-expand'
         }
 
         type() {
-            return Core.ModuleType.ACTION;
+            return Core.ModuleType.DELEGATE;
         }
 
         parent() {
@@ -24,11 +34,16 @@ module Modules {
             return 'resize';
         }
 
-        process(): Promise<Core.RsImage> {
-            var i: Core.RsImage = new Core.RsImage('1', '2', '3');
+        doAction(width: number, height: number) {
+            this.editor.UI().selected().forEach((img: Core.RsImage) =>
+                {
+                    var act = new ResizeAction(img, width, height);
 
-            var act = new ResizeAction(i);
-            return i.getActionDispatcher().process(act);
+                    img.getActionDispatcher().process(act).then(() => {
+                        this.editor.UI().getPage().getView().render();
+                    });
+                }
+            );
         }
     }
 }

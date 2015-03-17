@@ -1,3 +1,6 @@
+/// <reference path="../RsImageEditor.ts"/>
+/// <reference path="../Image/RsImage.ts"/>
+
 module Core {
     export class ImageLoader {
         constructor(private editor: RsImageEditor) {
@@ -43,11 +46,14 @@ module Core {
 
             var reader: FileReader = new FileReader();
             reader.onload = (e) => {
-                this.editor.appendImage(new RsImage((<MSBaseReader>e.target).result, file.name, file.type));
+                var img = new RsImage(file.name, file.type);
+                img.create((<MSBaseReader>e.target).result).then((image) => {
+                    this.editor.appendImage(image);
 
-                if (isLast) {
-                    resolve(1);
-                }
+                    if (isLast) {
+                        resolve(1);
+                    }
+                });
             };
 
             reader.readAsDataURL(file);
