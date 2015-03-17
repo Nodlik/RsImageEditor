@@ -148,16 +148,29 @@ var Core;
             var wSize = this.getWidthGridSize();
             var hSize = this.getHeightGridSize();
             if ((wSize != 0) && (hSize != 0)) {
-                return this.downScaleSuperSampling(wSize, hSize);
+                return Promise.resolve(this.downScaleSuperSampling(wSize, hSize));
             }
             else {
+                return this.upScale();
             }
         };
         ImageResizer.prototype.upScale = function () {
+            var _this = this;
             var canvas = document.createElement('canvas');
             var context = canvas.getContext('2d');
-            var result = context.createImageData(this.newWidth, this.newHeight);
-            return result;
+            canvas.width = this.original.width;
+            canvas.height = this.original.height;
+            context.putImageData(this.original, 0, 0);
+            var img = new Image();
+            return new Promise(function (resolve, reject) {
+                img.onload = function () {
+                    canvas.width = _this.newWidth;
+                    canvas.height = _this.newHeight;
+                    context.drawImage(img, 0, 0, _this.newWidth, _this.newHeight);
+                    resolve(context.getImageData(0, 0, _this.newWidth, _this.newHeight));
+                };
+                img.src = canvas.toDataURL();
+            });
         };
         ImageResizer.prototype.downScaleSuperSampling = function (wSize, hSize) {
             var canvas = document.createElement('canvas');
@@ -233,24 +246,6 @@ var Core;
                 canvas: canvas,
                 context: context
             };
-            /*
-
-            return this.image.getImage().then(
-                (img: HTMLImageElement) => {
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-
-                    ctx.drawImage(img, 0, 0);
-
-                    return {
-                        canvas: canvas,
-                        context: ctx
-                    };
-                }
-            );*/
-        };
-        AbstractAction.prototype.removeTempImage = function () {
-            $('#c_' + this.image.getId()).remove();
         };
         AbstractAction.prototype.saveOldImage = function () {
             this.oldImage = {
@@ -289,32 +284,17 @@ var Modules;
             this.height = height;
             this.image = image;
         }
-        ResizeAction.prototype.getRandomInt = function (min, max) {
-            return Math.floor(Math.random() * (max - min + 1)) + min;
-        };
         ResizeAction.prototype.execute = function () {
+            var _this = this;
             this.saveOldImage();
             var canvasObject = this.drawTempImage();
-            var resizeImage = (new Core.ImageResizer(canvasObject.context.getImageData(0, 0, canvasObject.canvas.width, canvasObject.canvas.height), this.width, this.height)).resize();
-            canvasObject.canvas.width = this.width;
-            canvasObject.canvas.height = this.height;
-            canvasObject.context.putImageData(resizeImage, 0, 0);
-            this.image.update(resizeImage, canvasObject.canvas.toDataURL());
-            this.removeTempImage();
-            return Promise.resolve(this.image);
-            //console.log(canvasObject.context.getImageData(0, 0, canvasObject.canvas.width, canvasObject.canvas.height));
-            /*
-             canvasObject.canvas.width = this.width;
-             canvasObject.canvas.height = this.height;
-
-             return this.image.getImage().then((img: HTMLImageElement) => {
-             canvasObject.context.drawImage(img, 0, 0, this.width, this.height);
-
-             this.image.updateImage(canvasObject.canvas.toDataURL());
-
-             this.removeTempImage();
-             return this.image;
-             });*/
+            return (new Core.ImageResizer(canvasObject.context.getImageData(0, 0, canvasObject.canvas.width, canvasObject.canvas.height), this.width, this.height)).resize().then(function (resizeImage) {
+                canvasObject.canvas.width = _this.width;
+                canvasObject.canvas.height = _this.height;
+                canvasObject.context.putImageData(resizeImage, 0, 0);
+                _this.image.update(resizeImage, canvasObject.canvas.toDataURL());
+                return _this.image;
+            });
         };
         return ResizeAction;
     })(Core.AbstractAction);

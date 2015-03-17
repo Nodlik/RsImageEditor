@@ -16,21 +16,21 @@ module Modules {
 
             var canvasObject = this.drawTempImage();
 
-            var resizeImage:ImageData =
-                (new Core.ImageResizer(
+            return (new Core.ImageResizer(
                     canvasObject.context.getImageData(0, 0, canvasObject.canvas.width, canvasObject.canvas.height),
                     this.width,
                     this.height
-                )).resize();
+                )).resize().then(
+                (resizeImage: ImageData) => {
+                    canvasObject.canvas.width = this.width;
+                    canvasObject.canvas.height = this.height;
 
+                    canvasObject.context.putImageData(resizeImage, 0, 0);
+                    this.image.update(resizeImage, canvasObject.canvas.toDataURL());
 
-            canvasObject.canvas.width = this.width;
-            canvasObject.canvas.height = this.height;
-
-            canvasObject.context.putImageData(resizeImage, 0, 0);
-            this.image.update(resizeImage, canvasObject.canvas.toDataURL());
-
-            return Promise.resolve(this.image);
+                    return this.image;
+                }
+            )
         }
     }
 }

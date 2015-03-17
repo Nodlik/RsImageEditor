@@ -21,28 +21,43 @@ module Core {
             this.size = this.original.data.length;
         }
 
-        resize():ImageData {
+        resize(): Promise<ImageData> {
             var wSize = this.getWidthGridSize();
             var hSize = this.getHeightGridSize();
 
 
             if ((wSize != 0) && (hSize != 0)) {
-                return this.downScaleSuperSampling(wSize, hSize);
+                return Promise.resolve(this.downScaleSuperSampling(wSize, hSize));
             }
             else {
-
+                return this.upScale();
             }
         }
 
-        private upScale(): ImageData {
+        private upScale(): Promise<ImageData> {
             var canvas = document.createElement('canvas');
             var context = canvas.getContext('2d');
 
-            var result = context.createImageData(this.newWidth, this.newHeight);
+            canvas.width = this.original.width;
+            canvas.height = this.original.height;
 
-            // todo add upscale....
+            context.putImageData(this.original, 0, 0);
 
-            return result;
+            var img = new Image();
+
+            return new Promise<ImageData>(
+                (resolve, reject) => {
+                    img.onload = () => {
+                        canvas.width = this.newWidth;
+                        canvas.height = this.newHeight;
+                        context.drawImage(img, 0, 0, this.newWidth, this.newHeight);
+
+                        resolve(context.getImageData(0, 0, this.newWidth, this.newHeight));
+                    };
+
+                    img.src = canvas.toDataURL();
+                });
+
         }
 
         private downScaleSuperSampling(wSize: number, hSize: number): ImageData {
