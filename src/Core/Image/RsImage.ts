@@ -10,15 +10,23 @@ module Core {
         private id = '';
 
         private actionDispatcher: ActionDispatcher = null;
-        private imageData: ImageData;
-        private imageBase64: string = '';
+
+        private originalImage: ImageData;
+        private processedImage: ImageData;
+
+        private imageBase64: string = ''; // BASE 64 processed image
+
+        public width: number;
+        public height: number;
+        public brightness: number;
 
         constructor(private imageName: string, private imageType: string) {
-            this.actionDispatcher = new ActionDispatcher(this);
+            this.actionDispatcher = new ActionDispatcher(<RsImage>this);
         }
 
         create(imageBase64: string): Promise<RsImage> {
             this.imageBase64 = imageBase64;
+
             return new Promise<RsImage>(
                 (resolve, reject) => {
                     this.getImage().then((img) =>
@@ -31,7 +39,8 @@ module Core {
 
                         context.drawImage(img, 0, 0);
 
-                        this.imageData = context.getImageData(0, 0, img.width, img.height);
+                        this.originalImage = context.getImageData(0, 0, img.width, img.height);
+                        this.init();
 
                         resolve(this);
                     });
@@ -39,9 +48,91 @@ module Core {
             )
         }
 
-        update(imageData: ImageData, imageBase64: string) {
-            this.imageBase64 = imageBase64;
-            this.imageData = imageData;
+        private init() {
+            this.processedImage = this.originalImage;
+
+            this.width = this.originalImage.width;
+            this.height = this.originalImage.height;
+            this.brightness = 0;
+        }
+
+        public save(): Promise<RsImage> {
+            var canvas = document.createElement('canvas');
+            var context = canvas.getContext('2d');
+            canvas.width = this.width;
+            canvas.height = this.height;
+            context.putImageData(this.originalImage, 0, 0);
+
+            /* RESIZE */
+            var resizePromise: Promise<ImageData>;
+            if ((this.width != this.originalImage.width) || (this.height != this.originalImage.height)) {
+                resizePromise = (new ImageResizer(this.originalImage, this.width, this.height)).resize();
+            }
+            else {
+                resizePromise = Promise.resolve(context.getImageData(0, 0, this.width, this.height));
+            }
+
+            /* CAMAN */
+            return resizePromise.then(
+                (imageData: ImageData) =>
+                {
+                    canvas.width = imageData.width;
+                    canvas.height = imageData.height;
+                    context.putImageData(imageData, 0, 0);
+
+                    return new Promise<ImageData>(
+                        (resolve, reject) => {
+                            var self = this;
+                            Caman(canvas, function() {
+                                this.brightness(self.brightness);
+
+                                this.render(() => {
+                                    resolve(context.getImageData(0, 0, imageData.width, imageData.height));
+                                });
+                            });
+                        }
+                    )
+                }
+            ).then(
+                (imageData: ImageData) => {
+                    this.processedImage = imageData;
+
+                    var canvas: HTMLCanvasElement = document.createElement('canvas');
+                    var context = canvas.getContext('2d');
+                    canvas.width = this.processedImage.width;
+                    canvas.height = this.processedImage.height;
+
+                    context.putImageData(this.processedImage, 0, 0);
+                    this.imageBase64 = canvas.toDataURL();
+
+                    return this;
+                }
+            );
+        }
+
+
+        getImageData(): ImageData {
+            return this.processedImage;
+        }
+
+        getWidth(): number {
+            return this.processedImage.width;
+        }
+
+        getHeight(): number {
+            return this.processedImage.height;
+        }
+
+        getName(): string {
+            return this.imageName;
+        }
+
+        getLabel(): string {
+            return '';
+        }
+
+        getImageBase64(): string {
+            return this.imageBase64;
         }
 
         getActionDispatcher(): ActionDispatcher {
@@ -54,41 +145,6 @@ module Core {
 
         getId(): string {
             return this.id;
-        }
-
-        getImageData(): ImageData {
-            return this.imageData;
-        }
-
-        getImageBase64(): string {
-            return this.imageBase64;
-        }
-
-        getWidth(): number {
-            return this.imageData.width;
-        }
-
-        getHeight(): number {
-            return this.imageData.height;
-        }
-
-        getName(): string {
-            return this.imageName;
-        }
-
-        getLabel(): string {
-            return '';
-        }
-
-        getState(): RsImageState {
-            return {
-                imageData: this.getImageData(),
-                base64: this.getImageBase64()
-            }
-        }
-
-        setState(state: RsImageState) {
-            this.update(state.imageData, state.base64);
         }
 
         getImage(): Promise<HTMLImageElement> {

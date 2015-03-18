@@ -1,44 +1,31 @@
 /// <reference path="../../Core/Image/RsImage.ts"/>
 /// <reference path="../../Core/Image/ImageResizer.ts"/>
 /// <reference path="../../Core/Action/EditorAction.ts"/>
-/// <reference path="../../Core/Action/AbstractAction.ts"/>
 
 module Modules {
-    export class ResizeAction extends Core.AbstractAction {
-        constructor(image:Core.RsImage, private width:number, private height:number) {
-            super(image);
+    export class ResizeAction implements Core.EditorAction {
+        private oldWidth: number;
+        private oldHeight: number;
 
-            this.image = image;
-        }
+        constructor(public image: Core.RsImage, private width: number, private height: number) {
 
-        getName(): string {
-            return 'resize';
-        }
-
-        getType(): Core.ActionType {
-            return Core.ActionType.FIXED;
         }
 
         execute() {
-            this.saveOldImage();
+            this.oldWidth = this.image.getWidth();
+            this.oldHeight = this.image.getHeight();
 
-            var canvasObject = this.drawTempImage();
+            this.image.width = this.width;
+            this.image.height = this.height;
 
-            return (new Core.ImageResizer(
-                    canvasObject.context.getImageData(0, 0, canvasObject.canvas.width, canvasObject.canvas.height),
-                    this.width,
-                    this.height
-                )).resize().then(
-                (resizeImage: ImageData) => {
-                    canvasObject.canvas.width = this.width;
-                    canvasObject.canvas.height = this.height;
+            return this.image.save();
+        }
 
-                    canvasObject.context.putImageData(resizeImage, 0, 0);
-                    this.image.update(resizeImage, canvasObject.canvas.toDataURL());
+        unExecute() {
+            this.image.width = this.oldWidth;
+            this.image.height = this.oldHeight;
 
-                    return this.image;
-                }
-            )
+            return this.image.save();
         }
     }
 }

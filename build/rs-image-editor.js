@@ -1,12 +1,4 @@
 /// <reference path="../Image/RsImage.ts"/>
-var Core;
-(function (Core) {
-    (function (ActionType) {
-        ActionType[ActionType["FIXED"] = 0] = "FIXED";
-        ActionType[ActionType["NOT_FIXED"] = 1] = "NOT_FIXED";
-    })(Core.ActionType || (Core.ActionType = {}));
-    var ActionType = Core.ActionType;
-})(Core || (Core = {}));
 /// <reference path="../Image/RsImage.ts"/>
 /// <reference path="EditorAction.ts"/>
 var Core;
@@ -14,61 +6,32 @@ var Core;
     var ActionDispatcher = (function () {
         function ActionDispatcher(image) {
             this.current = -1;
-            this.imagesStates = {};
             this.image = image;
             this.actions = [];
             this.actionsResult = [];
         }
         ActionDispatcher.prototype.process = function (action) {
-            var _this = this;
             this.actions = this.actions.splice(this.current);
             this.actions.push(action);
             this.current++;
-            if (action.getType() == 1 /* NOT_FIXED */) {
-                if (_.has(this.imagesStates, action.getName())) {
-                    this.image.setState(this.imagesStates[action.getName()]);
-                }
-                else {
-                    this.imagesStates[action.getName()] = this.image.getState();
-                }
-            }
             this.actionsResult.push(this.doAction(action.execute, action));
-            return _.last(this.actionsResult).then(function (image) {
-                _this.updateFirstState(action.getName(), image.getState());
-                return image;
-            });
-        };
-        ActionDispatcher.prototype.updateFirstState = function (actionName, newState) {
-            var _this = this;
-            _.map(this.imagesStates, function (val, act) {
-                if (actionName != act) {
-                    _this.imagesStates[act] = newState;
-                }
-            });
+            return _.last(this.actionsResult);
         };
         ActionDispatcher.prototype.undo = function () {
-            var _this = this;
             if (this.current >= 0) {
                 var act = this.actions[this.current];
                 this.current--;
                 this.actionsResult.push(this.doAction(act.unExecute, act));
-                return _.last(this.actionsResult).then(function (image) {
-                    _this.updateFirstState(act.getName(), image.getState());
-                    return image;
-                });
+                return _.last(this.actionsResult);
             }
             return Promise.resolve(this.image);
         };
         ActionDispatcher.prototype.redo = function () {
-            var _this = this;
             if (this.current < this.actions.length - 1) {
                 this.current++;
                 var act = this.actions[this.current];
                 this.actionsResult.push(this.doAction(act.execute, act));
-                return _.last(this.actionsResult).then(function (image) {
-                    _this.updateFirstState(act.getName(), image.getState());
-                    return image;
-                });
+                return _.last(this.actionsResult);
             }
             return Promise.resolve(this.image);
         };
@@ -98,7 +61,7 @@ var Core;
             this.imageType = imageType;
             this.id = '';
             this.actionDispatcher = null;
-            this.imageBase64 = '';
+            this.imageBase64 = ''; // BASE 64 processed image
             this.actionDispatcher = new Core.ActionDispatcher(this);
         }
         RsImage.prototype.create = function (imageBase64) {
@@ -111,14 +74,75 @@ var Core;
                     canvas.width = img.width;
                     canvas.height = img.height;
                     context.drawImage(img, 0, 0);
-                    _this.imageData = context.getImageData(0, 0, img.width, img.height);
+                    _this.originalImage = context.getImageData(0, 0, img.width, img.height);
+                    _this.init();
                     resolve(_this);
                 });
             });
         };
-        RsImage.prototype.update = function (imageData, imageBase64) {
-            this.imageBase64 = imageBase64;
-            this.imageData = imageData;
+        RsImage.prototype.init = function () {
+            this.processedImage = this.originalImage;
+            this.width = this.originalImage.width;
+            this.height = this.originalImage.height;
+            this.brightness = 0;
+        };
+        RsImage.prototype.save = function () {
+            var _this = this;
+            var canvas = document.createElement('canvas');
+            var context = canvas.getContext('2d');
+            canvas.width = this.width;
+            canvas.height = this.height;
+            context.putImageData(this.originalImage, 0, 0);
+            /* RESIZE */
+            var resizePromise;
+            if ((this.width != this.originalImage.width) || (this.height != this.originalImage.height)) {
+                resizePromise = (new Core.ImageResizer(this.originalImage, this.width, this.height)).resize();
+            }
+            else {
+                resizePromise = Promise.resolve(context.getImageData(0, 0, this.width, this.height));
+            }
+            /* CAMAN */
+            return resizePromise.then(function (imageData) {
+                canvas.width = imageData.width;
+                canvas.height = imageData.height;
+                context.putImageData(imageData, 0, 0);
+                return new Promise(function (resolve, reject) {
+                    var self = _this;
+                    Caman(canvas, function () {
+                        this.brightness(self.brightness);
+                        this.render(function () {
+                            resolve(context.getImageData(0, 0, imageData.width, imageData.height));
+                        });
+                    });
+                });
+            }).then(function (imageData) {
+                _this.processedImage = imageData;
+                var canvas = document.createElement('canvas');
+                var context = canvas.getContext('2d');
+                canvas.width = _this.processedImage.width;
+                canvas.height = _this.processedImage.height;
+                context.putImageData(_this.processedImage, 0, 0);
+                _this.imageBase64 = canvas.toDataURL();
+                return _this;
+            });
+        };
+        RsImage.prototype.getImageData = function () {
+            return this.processedImage;
+        };
+        RsImage.prototype.getWidth = function () {
+            return this.processedImage.width;
+        };
+        RsImage.prototype.getHeight = function () {
+            return this.processedImage.height;
+        };
+        RsImage.prototype.getName = function () {
+            return this.imageName;
+        };
+        RsImage.prototype.getLabel = function () {
+            return '';
+        };
+        RsImage.prototype.getImageBase64 = function () {
+            return this.imageBase64;
         };
         RsImage.prototype.getActionDispatcher = function () {
             return this.actionDispatcher;
@@ -128,33 +152,6 @@ var Core;
         };
         RsImage.prototype.getId = function () {
             return this.id;
-        };
-        RsImage.prototype.getImageData = function () {
-            return this.imageData;
-        };
-        RsImage.prototype.getImageBase64 = function () {
-            return this.imageBase64;
-        };
-        RsImage.prototype.getWidth = function () {
-            return this.imageData.width;
-        };
-        RsImage.prototype.getHeight = function () {
-            return this.imageData.height;
-        };
-        RsImage.prototype.getName = function () {
-            return this.imageName;
-        };
-        RsImage.prototype.getLabel = function () {
-            return '';
-        };
-        RsImage.prototype.getState = function () {
-            return {
-                imageData: this.getImageData(),
-                base64: this.getImageBase64()
-            };
-        };
-        RsImage.prototype.setState = function (state) {
-            this.update(state.imageData, state.base64);
         };
         RsImage.prototype.getImage = function () {
             var _this = this;
@@ -280,113 +277,27 @@ var Core;
     })();
     Core.ImageResizer = ImageResizer;
 })(Core || (Core = {}));
-/// <reference path="../Image/RsImage.ts"/>
-var Core;
-(function (Core) {
-    var AbstractAction = (function () {
-        function AbstractAction(image) {
-            this.image = image;
-            this.saveOldImage();
-        }
-        AbstractAction.prototype.drawTempImage = function () {
-            var canvas = document.createElement('canvas');
-            var context = canvas.getContext('2d');
-            canvas.width = this.image.getWidth();
-            canvas.height = this.image.getHeight();
-            context.putImageData(this.image.getImageData(), 0, 0);
-            return {
-                canvas: canvas,
-                context: context
-            };
-        };
-        AbstractAction.prototype.getName = function () {
-            throw new Error('Not implement');
-        };
-        AbstractAction.prototype.getType = function () {
-            throw new Error('Not implement');
-        };
-        AbstractAction.prototype.saveOldImage = function () {
-            this.oldImage = {
-                data: this.image.getImageData(),
-                base64: this.image.getImageBase64()
-            };
-        };
-        AbstractAction.prototype.execute = function () {
-            throw new Error('Not implement');
-        };
-        AbstractAction.prototype.unExecute = function () {
-            this.image.update(this.oldImage.data, this.oldImage.base64);
-            return Promise.resolve(this.image);
-        };
-        return AbstractAction;
-    })();
-    Core.AbstractAction = AbstractAction;
-})(Core || (Core = {}));
 /// <reference path="../../Core/Image/RsImage.ts"/>
 /// <reference path="../../Core/Image/ImageResizer.ts"/>
 /// <reference path="../../Core/Action/EditorAction.ts"/>
-/// <reference path="../../Core/Action/AbstractAction.ts"/>
-var __extends = this.__extends || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    __.prototype = b.prototype;
-    d.prototype = new __();
-};
-var Core;
-(function (Core) {
-    var CamanJSAction = (function (_super) {
-        __extends(CamanJSAction, _super);
-        function CamanJSAction(image) {
-            _super.call(this, image);
-            this.image = image;
-        }
-        CamanJSAction.prototype.getName = function () {
-            return 'brightness';
-        };
-        CamanJSAction.prototype.getType = function () {
-            return 1 /* NOT_FIXED */;
-        };
-        CamanJSAction.prototype.camanAction = function (camanObject) {
-            throw new Error('Not implement');
-        };
-        CamanJSAction.prototype.execute = function () {
-            var _this = this;
-            this.saveOldImage();
-            var canvasObject = this.drawTempImage();
-            return new Promise(function (resolve, reject) {
-                var self = _this;
-                Caman(canvasObject.canvas, function () {
-                    self.camanAction(this);
-                    this.render(function () {
-                        self.image.update(canvasObject.context.getImageData(0, 0, canvasObject.canvas.width, canvasObject.canvas.height), canvasObject.canvas.toDataURL());
-                        resolve(self.image);
-                    });
-                });
-            });
-        };
-        return CamanJSAction;
-    })(Core.AbstractAction);
-    Core.CamanJSAction = CamanJSAction;
-})(Core || (Core = {}));
-/// <reference path="../../Core/Image/RsImage.ts"/>
-/// <reference path="../../Core/Image/ImageResizer.ts"/>
-/// <reference path="../../Core/Action/EditorAction.ts"/>
-/// <reference path="../../Core/Action/AbstractAction.ts"/>
-/// <reference path="../../Core/Action/CamanJSAction.ts"/>
 var Modules;
 (function (Modules) {
-    var BrightnessAction = (function (_super) {
-        __extends(BrightnessAction, _super);
+    var BrightnessAction = (function () {
         function BrightnessAction(image, brightness) {
-            _super.call(this, image);
-            this.brightness = brightness;
             this.image = image;
+            this.brightness = brightness;
         }
-        BrightnessAction.prototype.camanAction = function (camanObject) {
-            camanObject.brightness(this.brightness);
+        BrightnessAction.prototype.execute = function () {
+            this.oldBrightness = this.image.brightness;
+            this.image.brightness = this.brightness;
+            return this.image.save();
+        };
+        BrightnessAction.prototype.unExecute = function () {
+            this.image.brightness = this.oldBrightness;
+            return this.image.save();
         };
         return BrightnessAction;
-    })(Core.CamanJSAction);
+    })();
     Modules.BrightnessAction = BrightnessAction;
 })(Modules || (Modules = {}));
 var Core;
@@ -630,6 +541,12 @@ var UI;
     })();
     UI.Toolbar = Toolbar;
 })(UI || (UI = {}));
+var __extends = this.__extends || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    __.prototype = b.prototype;
+    d.prototype = new __();
+};
 var UI;
 (function (UI) {
     var GridToolbar = (function (_super) {
@@ -1048,37 +965,28 @@ var Modules;
 /// <reference path="../../Core/Image/RsImage.ts"/>
 /// <reference path="../../Core/Image/ImageResizer.ts"/>
 /// <reference path="../../Core/Action/EditorAction.ts"/>
-/// <reference path="../../Core/Action/AbstractAction.ts"/>
 var Modules;
 (function (Modules) {
-    var ResizeAction = (function (_super) {
-        __extends(ResizeAction, _super);
+    var ResizeAction = (function () {
         function ResizeAction(image, width, height) {
-            _super.call(this, image);
+            this.image = image;
             this.width = width;
             this.height = height;
-            this.image = image;
         }
-        ResizeAction.prototype.getName = function () {
-            return 'resize';
-        };
-        ResizeAction.prototype.getType = function () {
-            return 0 /* FIXED */;
-        };
         ResizeAction.prototype.execute = function () {
-            var _this = this;
-            this.saveOldImage();
-            var canvasObject = this.drawTempImage();
-            return (new Core.ImageResizer(canvasObject.context.getImageData(0, 0, canvasObject.canvas.width, canvasObject.canvas.height), this.width, this.height)).resize().then(function (resizeImage) {
-                canvasObject.canvas.width = _this.width;
-                canvasObject.canvas.height = _this.height;
-                canvasObject.context.putImageData(resizeImage, 0, 0);
-                _this.image.update(resizeImage, canvasObject.canvas.toDataURL());
-                return _this.image;
-            });
+            this.oldWidth = this.image.getWidth();
+            this.oldHeight = this.image.getHeight();
+            this.image.width = this.width;
+            this.image.height = this.height;
+            return this.image.save();
+        };
+        ResizeAction.prototype.unExecute = function () {
+            this.image.width = this.oldWidth;
+            this.image.height = this.oldHeight;
+            return this.image.save();
         };
         return ResizeAction;
-    })(Core.AbstractAction);
+    })();
     Modules.ResizeAction = ResizeAction;
 })(Modules || (Modules = {}));
 /// <reference path="../../Core/Module/HtmlModule.ts"/>

@@ -1,20 +1,28 @@
 /// <reference path="../../Core/Image/RsImage.ts"/>
 /// <reference path="../../Core/Image/ImageResizer.ts"/>
 /// <reference path="../../Core/Action/EditorAction.ts"/>
-/// <reference path="../../Core/Action/AbstractAction.ts"/>
-/// <reference path="../../Core/Action/CamanJSAction.ts"/>
 
 
 module Modules {
-    export class BrightnessAction extends Core.CamanJSAction {
-        constructor(image: Core.RsImage, private brightness: number) {
-            super(image);
+    export class BrightnessAction implements Core.EditorAction {
+        private oldBrightness: number;
 
-            this.image = image;
+        constructor(public image: Core.RsImage, private brightness: number) {
+
         }
 
-        camanAction(camanObject) {
-            camanObject.brightness(this.brightness);
+        execute() {
+            this.oldBrightness = this.image.brightness;
+
+            this.image.brightness = this.brightness;
+
+            return this.image.save();
+        }
+
+        unExecute() {
+            this.image.brightness = this.oldBrightness;
+
+            return this.image.save();
         }
     }
 }
