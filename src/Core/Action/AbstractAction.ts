@@ -28,6 +28,15 @@ module Core {
             };
         }
 
+        getName(): string {
+            throw new Error('Not implement');
+        }
+
+        getType(): ActionType {
+            throw new Error('Not implement');
+        }
+
+
         saveOldImage() {
             this.oldImage = {
                 data: this.image.getImageData(),
@@ -36,7 +45,7 @@ module Core {
         }
 
         execute(): Promise<RsImage> {
-            return Promise.resolve(this.image);
+            throw new Error('Not implement');
         }
 
         unExecute(): Promise<RsImage> {

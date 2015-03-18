@@ -1,3 +1,20 @@
+(function() {(window.nunjucksPrecompiled = window.nunjucksPrecompiled || {})["color.dialog.html.njs"] = (function() {function root(env, context, frame, runtime, cb) {
+var lineno = null;
+var colno = null;
+var output = "";
+try {
+output += "<div>\n    <input class=\"m_color-brightness\" type=\"text\" placeholder=\"width\" value=\"100\" /> <br />\n\n    <button class=\"m_color-ok\" value=\"ok\">OK!</button>\n</div>";
+cb(null, output);
+;
+} catch (e) {
+  cb(runtime.handleError(e, lineno, colno));
+}
+}
+return {
+root: root
+};
+})();
+})();
 (function() {(window.nunjucksPrecompiled = window.nunjucksPrecompiled || {})["resize.dialog.html.njs"] = (function() {function root(env, context, frame, runtime, cb) {
 var lineno = null;
 var colno = null;

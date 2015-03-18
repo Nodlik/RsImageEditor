@@ -1,4 +1,12 @@
 /// <reference path="../Image/RsImage.ts"/>
+var Core;
+(function (Core) {
+    (function (ActionType) {
+        ActionType[ActionType["FIXED"] = 0] = "FIXED";
+        ActionType[ActionType["NOT_FIXED"] = 1] = "NOT_FIXED";
+    })(Core.ActionType || (Core.ActionType = {}));
+    var ActionType = Core.ActionType;
+})(Core || (Core = {}));
 /// <reference path="../Image/RsImage.ts"/>
 /// <reference path="EditorAction.ts"/>
 var Core;
@@ -6,32 +14,61 @@ var Core;
     var ActionDispatcher = (function () {
         function ActionDispatcher(image) {
             this.current = -1;
+            this.imagesStates = {};
             this.image = image;
             this.actions = [];
             this.actionsResult = [];
         }
         ActionDispatcher.prototype.process = function (action) {
+            var _this = this;
             this.actions = this.actions.splice(this.current);
             this.actions.push(action);
             this.current++;
+            if (action.getType() == 1 /* NOT_FIXED */) {
+                if (_.has(this.imagesStates, action.getName())) {
+                    this.image.setState(this.imagesStates[action.getName()]);
+                }
+                else {
+                    this.imagesStates[action.getName()] = this.image.getState();
+                }
+            }
             this.actionsResult.push(this.doAction(action.execute, action));
-            return _.last(this.actionsResult);
+            return _.last(this.actionsResult).then(function (image) {
+                _this.updateFirstState(action.getName(), image.getState());
+                return image;
+            });
+        };
+        ActionDispatcher.prototype.updateFirstState = function (actionName, newState) {
+            var _this = this;
+            _.map(this.imagesStates, function (val, act) {
+                if (actionName != act) {
+                    _this.imagesStates[act] = newState;
+                }
+            });
         };
         ActionDispatcher.prototype.undo = function () {
+            var _this = this;
             if (this.current >= 0) {
                 var act = this.actions[this.current];
                 this.current--;
                 this.actionsResult.push(this.doAction(act.unExecute, act));
-                return _.last(this.actionsResult);
+                return _.last(this.actionsResult).then(function (image) {
+                    _this.updateFirstState(act.getName(), image.getState());
+                    return image;
+                });
             }
             return Promise.resolve(this.image);
         };
         ActionDispatcher.prototype.redo = function () {
+            var _this = this;
             if (this.current < this.actions.length - 1) {
                 this.current++;
                 var act = this.actions[this.current];
                 this.actionsResult.push(this.doAction(act.execute, act));
-                return _.last(this.actionsResult);
+                return _.last(this.actionsResult).then(function (image) {
+                    _this.updateFirstState(act.getName(), image.getState());
+                    return image;
+                });
             }
             return Promise.resolve(this.image);
         };
@@ -109,6 +146,15 @@ var Core;
         };
         RsImage.prototype.getLabel = function () {
             return '';
+        };
+        RsImage.prototype.getState = function () {
+            return {
+                imageData: this.getImageData(),
+                base64: this.getImageBase64()
+            };
+        };
+        RsImage.prototype.setState = function (state) {
+            this.update(state.imageData, state.base64);
         };
         RsImage.prototype.getImage = function () {
             var _this = this;
@@ -253,6 +299,12 @@ var Core;
                 context: context
             };
         };
+        AbstractAction.prototype.getName = function () {
+            throw new Error('Not implement');
+        };
+        AbstractAction.prototype.getType = function () {
+            throw new Error('Not implement');
+        };
         AbstractAction.prototype.saveOldImage = function () {
             this.oldImage = {
                 data: this.image.getImageData(),
@@ -260,7 +312,7 @@ var Core;
             };
         };
         AbstractAction.prototype.execute = function () {
-            return Promise.resolve(this.image);
+            throw new Error('Not implement');
         };
         AbstractAction.prototype.unExecute = function () {
             this.image.update(this.oldImage.data, this.oldImage.base64);
@@ -280,31 +332,62 @@ var __extends = this.__extends || function (d, b) {
     __.prototype = b.prototype;
     d.prototype = new __();
 };
-var Modules;
-(function (Modules) {
-    var ResizeAction = (function (_super) {
-        __extends(ResizeAction, _super);
-        function ResizeAction(image, width, height) {
+var Core;
+(function (Core) {
+    var CamanJSAction = (function (_super) {
+        __extends(CamanJSAction, _super);
+        function CamanJSAction(image) {
             _super.call(this, image);
-            this.width = width;
-            this.height = height;
             this.image = image;
         }
-        ResizeAction.prototype.execute = function () {
+        CamanJSAction.prototype.getName = function () {
+            return 'brightness';
+        };
+        CamanJSAction.prototype.getType = function () {
+            return 1 /* NOT_FIXED */;
+        };
+        CamanJSAction.prototype.camanAction = function (camanObject) {
+            throw new Error('Not implement');
+        };
+        CamanJSAction.prototype.execute = function () {
             var _this = this;
             this.saveOldImage();
             var canvasObject = this.drawTempImage();
-            return (new Core.ImageResizer(canvasObject.context.getImageData(0, 0, canvasObject.canvas.width, canvasObject.canvas.height), this.width, this.height)).resize().then(function (resizeImage) {
-                canvasObject.canvas.width = _this.width;
-                canvasObject.canvas.height = _this.height;
-                canvasObject.context.putImageData(resizeImage, 0, 0);
-                _this.image.update(resizeImage, canvasObject.canvas.toDataURL());
-                return _this.image;
+            return new Promise(function (resolve, reject) {
+                var self = _this;
+                Caman(canvasObject.canvas, function () {
+                    self.camanAction(this);
+                    this.render(function () {
+                        self.image.update(canvasObject.context.getImageData(0, 0, canvasObject.canvas.width, canvasObject.canvas.height), canvasObject.canvas.toDataURL());
+                        resolve(self.image);
+                    });
+                });
             });
         };
-        return ResizeAction;
+        return CamanJSAction;
     })(Core.AbstractAction);
-    Modules.ResizeAction = ResizeAction;
+    Core.CamanJSAction = CamanJSAction;
+})(Core || (Core = {}));
+/// <reference path="../../Core/Image/RsImage.ts"/>
+/// <reference path="../../Core/Image/ImageResizer.ts"/>
+/// <reference path="../../Core/Action/EditorAction.ts"/>
+/// <reference path="../../Core/Action/AbstractAction.ts"/>
+/// <reference path="../../Core/Action/CamanJSAction.ts"/>
+var Modules;
+(function (Modules) {
+    var BrightnessAction = (function (_super) {
+        __extends(BrightnessAction, _super);
+        function BrightnessAction(image, brightness) {
+            _super.call(this, image);
+            this.brightness = brightness;
+            this.image = image;
+        }
+        BrightnessAction.prototype.camanAction = function (camanObject) {
+            camanObject.brightness(this.brightness);
+        };
+        return BrightnessAction;
+    })(Core.CamanJSAction);
+    Modules.BrightnessAction = BrightnessAction;
 })(Modules || (Modules = {}));
 var Core;
 (function (Core) {
@@ -801,6 +884,7 @@ var Core;
             this.editor = editor;
             this.modules = {};
             this.registerModule('resize', new Modules.ResizeModule(this.editor), 2 /* ANY */);
+            this.registerModule('color', new Modules.ColorModule(this.editor), 2 /* ANY */);
         }
         ModuleManager.prototype.registerModule = function (name, editorModule, type) {
             if (!(name in this.modules)) {
@@ -915,6 +999,88 @@ var Core;
     })();
     Core.RsImageEditor = RsImageEditor;
 })(Core || (Core = {}));
+/// <reference path="../../Core/Module/HtmlModule.ts"/>
+/// <reference path="../../Core/RsImageEditor.ts"/>
+var Modules;
+(function (Modules) {
+    var ColorModule = (function () {
+        function ColorModule(editor) {
+            this.editor = editor;
+        }
+        ColorModule.prototype.html = function () {
+            return nunjucks.render('color.dialog.html.njs', {});
+        };
+        ColorModule.prototype.init = function ($el) {
+            var _this = this;
+            $el.find('.m_color-ok').click(function () {
+                _this.doAction($el.find('.m_color-brightness').val());
+                return false;
+            });
+        };
+        ColorModule.prototype.icon = function () {
+            return 'fa fa-image';
+        };
+        ColorModule.prototype.type = function () {
+            return 1 /* DELEGATE */;
+        };
+        ColorModule.prototype.parent = function () {
+            return null;
+        };
+        ColorModule.prototype.name = function () {
+            return 'resize';
+        };
+        ColorModule.prototype.doAction = function (brightness) {
+            var _this = this;
+            var promiseArray = [];
+            this.editor.UI().selected().forEach(function (img) {
+                //img.getActionDispatcher().createAction(BrightnessAction);
+                var act = new Modules.BrightnessAction(img, brightness);
+                promiseArray.push(img.getActionDispatcher().process(act));
+            });
+            Promise.all(promiseArray).then(function () {
+                _this.editor.UI().getPage().getView().render();
+            });
+        };
+        return ColorModule;
+    })();
+    Modules.ColorModule = ColorModule;
+})(Modules || (Modules = {}));
+/// <reference path="../../Core/Image/RsImage.ts"/>
+/// <reference path="../../Core/Image/ImageResizer.ts"/>
+/// <reference path="../../Core/Action/EditorAction.ts"/>
+/// <reference path="../../Core/Action/AbstractAction.ts"/>
+var Modules;
+(function (Modules) {
+    var ResizeAction = (function (_super) {
+        __extends(ResizeAction, _super);
+        function ResizeAction(image, width, height) {
+            _super.call(this, image);
+            this.width = width;
+            this.height = height;
+            this.image = image;
+        }
+        ResizeAction.prototype.getName = function () {
+            return 'resize';
+        };
+        ResizeAction.prototype.getType = function () {
+            return 0 /* FIXED */;
+        };
+        ResizeAction.prototype.execute = function () {
+            var _this = this;
+            this.saveOldImage();
+            var canvasObject = this.drawTempImage();
+            return (new Core.ImageResizer(canvasObject.context.getImageData(0, 0, canvasObject.canvas.width, canvasObject.canvas.height), this.width, this.height)).resize().then(function (resizeImage) {
+                canvasObject.canvas.width = _this.width;
+                canvasObject.canvas.height = _this.height;
+                canvasObject.context.putImageData(resizeImage, 0, 0);
+                _this.image.update(resizeImage, canvasObject.canvas.toDataURL());
+                return _this.image;
+            });
+        };
+        return ResizeAction;
+    })(Core.AbstractAction);
+    Modules.ResizeAction = ResizeAction;
+})(Modules || (Modules = {}));
 /// <reference path="../../Core/Module/HtmlModule.ts"/>
 /// <reference path="../../Core/RsImageEditor.ts"/>
 var Modules;

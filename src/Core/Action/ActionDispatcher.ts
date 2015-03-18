@@ -12,6 +12,8 @@ module Core {
         private actionsResult: Promise<RsImage>[];
         private current: number = -1;
 
+        private imagesStates: {[actionName: string]: RsImageState} = {};
+
         constructor(image: RsImage) {
             this.image = image;
             this.actions = [];
@@ -23,9 +25,34 @@ module Core {
             this.actions.push(action);
             this.current++;
 
+            if (action.getType() == ActionType.NOT_FIXED) {
+                if (_.has(this.imagesStates, action.getName())) {
+                    this.image.setState(this.imagesStates[action.getName()]);
+                }
+                else {
+                    this.imagesStates[action.getName()] = this.image.getState();
+                }
+            }
+
             this.actionsResult.push(this.doAction(action.execute, action));
 
-            return _.last(this.actionsResult);
+            return _.last(this.actionsResult).then((image: RsImage) =>
+                {
+                    this.updateFirstState(action.getName(), image.getState());
+                    return image;
+                }
+            );
+        }
+
+        private updateFirstState(actionName: string, newState: RsImageState) {
+            _.map(this.imagesStates,
+                (val: RsImageState, act: string) =>
+                {
+                    if (actionName != act) {
+                        this.imagesStates[act] = newState;
+                    }
+                }
+            );
         }
 
         undo(): Promise<RsImage> {
@@ -33,7 +60,13 @@ module Core {
                 var act = this.actions[this.current];
                 this.current--;
                 this.actionsResult.push(this.doAction(act.unExecute, act));
-                return _.last(this.actionsResult);
+
+                return _.last(this.actionsResult).then((image: RsImage) =>
+                    {
+                        this.updateFirstState(act.getName(), image.getState());
+                        return image;
+                    }
+                );
             }
 
             return Promise.resolve(this.image);
@@ -44,7 +77,13 @@ module Core {
                 this.current++;
                 var act = this.actions[this.current];
                 this.actionsResult.push(this.doAction(act.execute, act));
-                return _.last(this.actionsResult);
+
+                return _.last(this.actionsResult).then((image: RsImage) =>
+                    {
+                        this.updateFirstState(act.getName(), image.getState());
+                        return image;
+                    }
+                );
             }
 
             return Promise.resolve(this.image);

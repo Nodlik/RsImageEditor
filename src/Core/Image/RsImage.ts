@@ -1,6 +1,11 @@
 /// <reference path="../Action/ActionDispatcher.ts"/>
 
 module Core {
+    export interface RsImageState {
+        imageData: ImageData;
+        base64: string;
+    }
+
     export class RsImage {
         private id = '';
 
@@ -73,6 +78,17 @@ module Core {
 
         getLabel(): string {
             return '';
+        }
+
+        getState(): RsImageState {
+            return {
+                imageData: this.getImageData(),
+                base64: this.getImageBase64()
+            }
+        }
+
+        setState(state: RsImageState) {
+            this.update(state.imageData, state.base64);
         }
 
         getImage(): Promise<HTMLImageElement> {

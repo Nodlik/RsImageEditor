@@ -11,6 +11,14 @@ module Modules {
             this.image = image;
         }
 
+        getName(): string {
+            return 'resize';
+        }
+
+        getType(): Core.ActionType {
+            return Core.ActionType.FIXED;
+        }
+
         execute() {
             this.saveOldImage();
 

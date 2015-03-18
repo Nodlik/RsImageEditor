@@ -88,6 +88,12 @@ module.exports = (grunt) ->
             dest: 'build/'
             flatten: true,
             filter: 'isFile'
+          ,
+            expand: true
+            src: 'packages/js/caman/dist/caman.pack.js'
+            dest: 'build/'
+            flatten: true,
+            filter: 'isFile'
         ]
 
     clean:
