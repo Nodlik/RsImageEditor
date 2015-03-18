@@ -19,7 +19,13 @@ module Core {
             return c;
         }
 
+        /**
+         * generate unique id to image
+         *
+         * @param image
+         */
         tryAdd(image: RsImage) {
+            // wtf?
             if (image.getId() == '') {
                 var key = Math.random().toString(36).substring(7);
 

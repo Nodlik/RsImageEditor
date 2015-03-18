@@ -13,37 +13,55 @@ module UI {
 
         constructor(private $el: JQuery, private editor: Core.RsImageEditor, private images: Core.ImageCollection)
         {
-            this.$el.append($('<input type="file" id="rsFileInput" multiple />'));
-            this.$el.find('#rsFileInput').on('change',
+            this.$el.html(nunjucks.render('editor.html.njs', {}));
+
+            var $fileLoader = this.$el.find('#rsFileInput');
+            $fileLoader.on('change',
                 function() {
                     editor.getLoader().load(this.files);
                 }
             );
 
-            // todo add template
-            this.$el.append($('<div id="rsToolbarPlace"></div>'));
+            this.$el.on('click', '#t-button__upload', () => {
+                $fileLoader.trigger('click');
+
+                return false;
+            });
+
+            this.$el.on('click', '.rs-image-block, .rs-image-data__inf', (e: JQueryEventObject) => {
+                this.editImage(
+                    $(e.target).closest('.rs-image').data('id')
+                );
+            });
+
+            this.$el.on('click', '#t-button__back', () => {
+                this.back();
+
+                return false;
+            });
+
+            this.$el.on('click', '.rs-image-selection-checkbox', (e: JQueryEventObject) => {
+                this.selectImage($(e.target).closest('.rs-image'));
+            });
+
             this.$toolbarPlace = this.$el.find('#rsToolbarPlace');
-
-
-            this.$el.append($('<div id="rsPopover" style="display: none"></div>'));
             this.$popOver = this.$el.find('#rsPopover');
-
-            this.$el.append($('<div id="rsImagePlace"></div>'));
             this.$imagePlace = this.$el.find('#rsImagePlace');
         }
+
 
         initModule($button: JQuery, editorModule: Core.EditorModule) {
             ModuleInitialization.init($button, editorModule, this.editor);
         }
 
         initToolbar($toolbar: JQuery) {
-            $toolbar.find('#a_redo').click(() => {
+            $toolbar.find('#t-button__redo').click(() => {
                 this.redo();
 
                 return false;
             });
 
-            $toolbar.find('#a_undo').click(() => {
+            $toolbar.find('#t-button__undo').click(() => {
                 this.undo();
 
                 return false;
@@ -51,20 +69,24 @@ module UI {
         }
 
         redo() {
+            var p = [];
             this.selected().forEach((img) => {
-                img.getActionDispatcher().redo()
-                    .then(() => {
-                        this.getPage().getView().render();
-                    });
+                p.push(img.getActionDispatcher().redo());
+            });
+
+            Promise.all(p).then(() => {
+                this.getPage().getView().render();
             });
         }
 
         undo() {
+            var p = [];
             this.selected().forEach((img) => {
-                img.getActionDispatcher().undo()
-                    .then(() => {
-                        this.getPage().getView().render();
-                    });
+                p.push(img.getActionDispatcher().undo());
+            });
+
+            Promise.all(p).then(() => {
+                this.getPage().getView().render();
             });
         }
 
@@ -117,6 +139,28 @@ module UI {
 
         render() {
             this.getPage().render();
+        }
+
+
+        /**
+         * Go to single image editor
+         *
+         * @param imageId
+         */
+        private editImage(imageId: string) {
+            var image = this.images.getImage(imageId);
+
+            this.page = new Page(this, image, this.page);
+            this.render();
+        }
+
+        private selectImage($el: JQuery) {
+            if ($el.hasClass('rs-image-selected')) {
+                $el.removeClass('rs-image-selected');
+            }
+            else {
+                $el.addClass('rs-image-selected');
+            }
         }
     }
 }

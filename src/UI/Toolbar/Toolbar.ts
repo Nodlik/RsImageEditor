@@ -8,6 +8,10 @@ module UI {
 
         render() {
             this.$toolbar.html("");
+            if (this.page.getParent() !== null) {
+                this.renderBackButton(this.$toolbar);
+            }
+            this.renderCommonButton(this.$toolbar);
         }
 
         renderModuleToolbar(type: Core.ModuleViewType, $el: JQuery) {
@@ -15,16 +19,55 @@ module UI {
 
             modules.forEach((m: Core.EditorModule) =>
                 {
-                    $el.append($('<div id="_m' + m.name() + '"><i class="' + m.icon() + '"</div>'));
+                    var $button = $(nunjucks.render('toolbar.button.html.njs', {
+                        button: {
+                            name: m.name(),
+                            icon: m.icon(),
+                            localizedName: m.name()
+                        }
+                    }));
 
-                    this.editor.UI().initModule($el, m);
+                    $el.append($button);
+
+                    this.editor.UI().initModule($button, m);
                 }
             )
         }
 
         renderCommonButton($el: JQuery) {
-            $el.append($('<div id="a_redo"><i class="fa fa-repeat"</div>'));
-            $el.append($('<div id="a_undo"><i class="fa fa-undo"</div>'));
+            $el.append($(nunjucks.render('toolbar.button.html.njs', {
+                button: {
+                    name: 'upload',
+                    icon: 'fa fa-upload',
+                    localizedName: 'upload'
+                }
+            })));
+
+            $el.append($(nunjucks.render('toolbar.button.html.njs', {
+                button: {
+                    name: 'undo',
+                    icon: 'fa fa-undo',
+                    localizedName: 'undo'
+                }
+            })));
+
+            $el.append($(nunjucks.render('toolbar.button.html.njs', {
+                button: {
+                    name: 'redo',
+                    icon: 'fa fa-repeat',
+                    localizedName: 'redo'
+                }
+            })));
+        }
+
+        renderBackButton($el: JQuery) {
+            $el.append($(nunjucks.render('toolbar.button.html.njs', {
+                button: {
+                    name: 'back',
+                    icon: 'fa fa-arrow-left',
+                    localizedName: 'back'
+                }
+            })));
         }
     }
 }

@@ -29,5 +29,29 @@ module Core {
         getImages(): RsImage[] {
             return this.images;
         }
+
+        getImage(imageId: string): ImageCollection {
+            var result = new ImageCollection(this.manager);
+
+            this.images.forEach((image) => {
+                if (image.getId() == imageId) {
+                    result.add(image);
+                }
+            });
+
+            return result;
+        }
+
+        findImage(ids: string[]): RsImage[] {
+            var result: RsImage[] = [];
+
+            this.images.forEach((image) => {
+                if (_.contains(ids, image.getId())) {
+                    result.push(image);
+                }
+            });
+
+            return result;
+        }
     }
 }

@@ -20,8 +20,11 @@ module.exports = (grunt) ->
         files: ['src/**/*.ts']
         tasks: ['typescript']
       nunjucksjs:
-        files: ['src/modules/**/*.twig']
+        files: ['src/**/*.twig']
         tasks: ['nunjucks']
+      less:
+        files: ['theme/**/*.less']
+        tasks: ['less']
 
     typescript:
       base:
@@ -31,15 +34,13 @@ module.exports = (grunt) ->
           target: 'es5'
           references: [
             "packages/reference/**/*.d.ts",
-            "src/Modules/**/*.ts",
-            #"src/UI/**/*.ts",
-            #"src/Core/**/*.ts"
+            "src/Modules/**/*.ts"
           ]
 
     nunjucks:
       precompile:
-        baseDir: 'src/Modules'
-        src: 'src/Modules/**/*.twig'
+        baseDir: 'src/'
+        src: 'src/**/*.njs'
         dest: 'build/template.js'
         options:
           name: (path) ->

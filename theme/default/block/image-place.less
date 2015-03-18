@@ -1,11 +1,11 @@
 @import "../config/config";
 @import "../lib/mixin";
 
-.rs-image-list {
+.rs-image-place {
+  width: 100%;
   .flex(flex-start, flex-start);
 
   .flex-wrap(wrap);
-
   padding: 20px 0;
 
   img {
@@ -27,6 +27,14 @@
       width: 150px;
     }
 
+    &.rs-image-selected {
+      background-color: @decorationColor;
+
+      .rs-image-data {
+        background-color: @decorationDarkColor;
+      }
+    }
+
     .flex(space-between, space-between);
     .flex-wrap(wrap);
 
@@ -36,9 +44,11 @@
 
       .flex-grow(2);
 
-      canvas {
+      img {
         display: block;
         margin: 0 auto;
+        max-width: 150px;
+        max-height: 170px - 50px;
       }
     }
 

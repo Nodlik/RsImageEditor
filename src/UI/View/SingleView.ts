@@ -12,6 +12,9 @@ module UI {
         }
 
         render() {
+            this.page.getImagePlace().html(
+                nunjucks.render('single.image.html.njs', {})
+            );
             this.getCanvas();
             this.renderImage();
         }
@@ -25,7 +28,10 @@ module UI {
         }
 
         private getCanvas() {
-            this.page.getImagePlace().append($('<canvas id="' + this.image.getId() + '"></canvas>'));
+            var $canvas = this.page.getImagePlace().find('#' + this.image.getId());
+            if ($canvas.length == 0) {
+                this.page.getImagePlace().find('#rsSingleImage').html('<canvas id="' + this.image.getId() + '"></canvas>');
+            }
             this.canvas = <HTMLCanvasElement>this.page.getImagePlace().find('#' + this.image.getId())[0];
 
             this.canvas.width = this.image.getWidth();

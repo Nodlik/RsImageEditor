@@ -8,7 +8,6 @@ module UI {
             super.render();
 
             this.renderModuleToolbar(Core.ModuleViewType.SINGLE, this.$toolbar);
-            this.renderCommonButton(this.$toolbar);
 
             this.editor.UI().initToolbar(this.$toolbar);
         }

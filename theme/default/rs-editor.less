@@ -4,15 +4,29 @@
 @import "config/config";
 @import "lib/mixin";
 
+@import "block/toolbar";
+@import "block/content";
+@import "block/popover";
+@import "block/image-place";
+@import "block/single-image";
+
 .rs-editor {
   font-family: @mainFont;
   font-size: @defaultFontSize;
 
-  width: @width;
+  min-width: @min-width;
+  max-width: @max-width;
 
   border: solid 1px @backgroundSecondColor;
-  padding: 2px;
+  padding: 5px 0;
+
   margin: 0 auto;
+  box-shadow: 0 0 5px 0 rgba(0, 0, 0, 0.4);
+
+  position: relative;
+  box-sizing: border-box;
+
+  background-color: @backgroundSecondColor;
 }
 
 .rs-editor-block {

@@ -3,13 +3,13 @@
 
 .rs-toolbar {
   height: @widgetSize;
-  width: @width;
+  width: 100%;
 
-  background-color: #E0E0E0;
+  background-color: @toolbarColor;
+  position: relative;
 
   .box-shadow(0, 4px, 4px, 0, rgba(0, 0, 0, 0.2));
   z-index: 1;
-  position: absolute;
 
   line-height: 1;
 
@@ -18,15 +18,20 @@
     background: none;
 
     height: @widgetSize + 1px;
-    width: 40px;
 
     box-sizing: border-box;
 
     padding: 0;
-    margin: -2px 0 0 0;
+    margin: 0 0 0 0;
     line-height: 1;
 
     display: inline-block;
+
+    i {
+      width: 40px;
+      line-height: @widgetSize;
+      text-align: center;
+    }
 
     * {
       color: #6D6D6D;

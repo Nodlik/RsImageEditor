@@ -26,7 +26,7 @@ module Core {
             var hSize = this.getHeightGridSize();
 
 
-            if ((wSize != 0) && (hSize != 0)) {
+            if ((wSize > 2) && (hSize > 2)) {
                 return Promise.resolve(this.downScaleSuperSampling(wSize, hSize));
             }
             else {

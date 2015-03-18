@@ -8,6 +8,8 @@ module UI {
             super.render();
 
             this.renderModuleToolbar(Core.ModuleViewType.GRID, this.$toolbar);
+
+            this.editor.UI().initToolbar(this.$toolbar);
         }
     }
 }

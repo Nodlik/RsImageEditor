@@ -67,6 +67,14 @@ module Core {
             return this.imageData.height;
         }
 
+        getName(): string {
+            return this.imageName;
+        }
+
+        getLabel(): string {
+            return '';
+        }
+
         getImage(): Promise<HTMLImageElement> {
             return new Promise<HTMLImageElement>(
                 (resolve, reject) => {
