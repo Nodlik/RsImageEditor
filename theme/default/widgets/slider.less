@@ -1,0 +1,27 @@
+.rs-slider {
+  position: relative;
+  height: 20px;
+
+  &:before {
+    content: "";
+    position: absolute;
+    height: 6px;
+    background-color: @backgroundSecondColor;
+    width: 100%;
+    top: 7px;
+  }
+
+  .rs-slider-handle {
+    width: 20px;
+    height: 20px;
+    border-radius: 10px;
+
+    left: 0;
+    top: 0;
+
+    cursor: pointer;
+
+    background-color: @decorationColor;
+    position: absolute;
+  }
+}

@@ -1,0 +1,37 @@
+.rs-resizable {
+  cursor: move;
+}
+
+.rs-resizable-item {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background-color: #000000;
+
+  z-index: 10000;
+
+  &.item_0 {
+    cursor: nw-resize;
+  }
+  &.item_1 {
+    cursor: n-resize;
+  }
+  &.item_2 {
+    cursor: ne-resize;
+  }
+  &.item_3 {
+    cursor: e-resize;
+  }
+  &.item_4 {
+    cursor: se-resize;
+  }
+  &.item_5 {
+    cursor: s-resize;
+  }
+  &.item_6 {
+    cursor: sw-resize;
+  }
+  &.item_7 {
+    cursor: w-resize;
+  }
+}
