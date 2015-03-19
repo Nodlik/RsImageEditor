@@ -58,7 +58,18 @@ module Modules {
         }
 
         doAction(left: number, top: number, width: number, height: number) {
+            var promiseArray: Promise<Core.RsImage>[] = [];
 
+            this.editor.UI().selected().forEach((img: Core.RsImage) =>
+                {
+                    var act = new CropAction(img, left, top, width, height);
+                    promiseArray.push(img.getActionDispatcher().process(act));
+                }
+            );
+
+            Promise.all(promiseArray).then(() => {
+                this.editor.UI().getPage().getView().render();
+            });
         }
     }
 }

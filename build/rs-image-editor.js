@@ -86,6 +86,30 @@ var Core;
             this.height = this.originalImage.height;
             this.brightness = 0;
         };
+        RsImage.prototype.getOriginalCoordinates = function (x, y) {
+            return {
+                x: (this.originalImage.width * x) / this.processedImage.width,
+                y: (this.originalImage.height * y) / this.processedImage.height
+            };
+        };
+        RsImage.prototype.getOriginalImage = function () {
+            return this.originalImage;
+        };
+        RsImage.prototype.replaceOriginal = function (image) {
+            this.originalImage = image;
+        };
+        RsImage.prototype.crop = function (left, top, width, height) {
+            var canvas = document.createElement('canvas');
+            var context = canvas.getContext('2d');
+            canvas.width = this.originalImage.width;
+            canvas.height = this.originalImage.height;
+            context.putImageData(this.originalImage, 0, 0);
+            var corner = this.getOriginalCoordinates(left, top);
+            var size = this.getOriginalCoordinates(width, height);
+            this.originalImage = context.getImageData(corner.x, corner.y, size.x, size.y);
+            this.width = width;
+            this.height = height;
+        };
         RsImage.prototype.save = function () {
             var _this = this;
             var canvas = document.createElement('canvas');
@@ -1114,9 +1138,16 @@ var Modules;
             this.height = height;
         }
         CropAction.prototype.execute = function () {
+            this.oldWidth = this.image.getWidth();
+            this.oldHeight = this.image.getHeight();
+            this.originalImage = this.image.getOriginalImage();
+            this.image.crop(this.left, this.top, this.width, this.height);
             return this.image.save();
         };
         CropAction.prototype.unExecute = function () {
+            this.image.width = this.oldWidth;
+            this.image.height = this.oldHeight;
+            this.image.replaceOriginal(this.originalImage);
             return this.image.save();
         };
         return CropAction;
@@ -1439,6 +1470,15 @@ var Modules;
             return 'crop';
         };
         CropModule.prototype.doAction = function (left, top, width, height) {
+            var _this = this;
+            var promiseArray = [];
+            this.editor.UI().selected().forEach(function (img) {
+                var act = new Modules.CropAction(img, left, top, width, height);
+                promiseArray.push(img.getActionDispatcher().process(act));
+            });
+            Promise.all(promiseArray).then(function () {
+                _this.editor.UI().getPage().getView().render();
+            });
         };
         return CropModule;
     })();

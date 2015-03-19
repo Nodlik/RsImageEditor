@@ -56,6 +56,36 @@ module Core {
             this.brightness = 0;
         }
 
+        private getOriginalCoordinates(x: number, y: number) {
+            return {
+                x: (this.originalImage.width * x) / this.processedImage.width,
+                y: (this.originalImage.height * y) / this.processedImage.height
+            }
+        }
+
+        public getOriginalImage(): ImageData {
+            return this.originalImage;
+        }
+
+        public replaceOriginal(image: ImageData) {
+            this.originalImage = image;
+        }
+
+        public crop(left: number, top: number, width: number, height: number) {
+            var canvas = document.createElement('canvas');
+            var context = canvas.getContext('2d');
+            canvas.width = this.originalImage.width;
+            canvas.height = this.originalImage.height;
+            context.putImageData(this.originalImage, 0, 0);
+
+            var corner = this.getOriginalCoordinates(left, top);
+            var size = this.getOriginalCoordinates(width, height);
+
+            this.originalImage = context.getImageData(corner.x, corner.y, size.x, size.y);
+            this.width = width;
+            this.height = height;
+        }
+
         public save(): Promise<RsImage> {
             var canvas = document.createElement('canvas');
             var context = canvas.getContext('2d');
