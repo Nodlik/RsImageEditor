@@ -23,6 +23,10 @@ module UI {
             return [this.image];
         }
 
+        getAreaElement(): JQuery {
+            return this.page.getImagePlace().find('#rsSingleImage');
+        }
+
         private renderImage() {
             this.context.putImageData(this.image.getImageData(), 0, 0);
         }

@@ -6,5 +6,6 @@ module Core {
         name(): string;
         type(): Core.ModuleType;
         parent(): EditorModule;
+        deinit(): void;
     }
 }

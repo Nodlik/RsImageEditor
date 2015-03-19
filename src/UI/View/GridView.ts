@@ -9,9 +9,19 @@ module UI {
 
         render() {
             this.page.getImagePlace().html("");
-            this.imageCollection.getImages().forEach((img) => {
-                this.renderImage(img);
-            });
+            var images = this.imageCollection.getImages();
+
+            if (images.length > 0) {
+                var i = 0;
+                var intervalId = setInterval(() => {
+                    this.renderImage(images[i]);
+
+                    i++;
+                    if (i == images.length) {
+                        clearInterval(intervalId);
+                    }
+                }, 10);
+            }
         }
 
         selected(): Core.RsImage[] {

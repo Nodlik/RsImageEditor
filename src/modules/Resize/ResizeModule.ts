@@ -10,6 +10,10 @@ module Modules {
             return nunjucks.render('resize.dialog.html.njs', {});
         }
 
+        deinit() {
+
+        }
+
         init($el: JQuery) {
             $el.find('.m_resize-ok').click(() => {
                 this.doAction($el.find('.m_resize-width').val(), $el.find('.m_resize-height').val());

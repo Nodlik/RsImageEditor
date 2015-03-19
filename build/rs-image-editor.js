@@ -421,6 +421,9 @@ var UI;
         SingleView.prototype.selected = function () {
             return [this.image];
         };
+        SingleView.prototype.getAreaElement = function () {
+            return this.page.getImagePlace().find('#rsSingleImage');
+        };
         SingleView.prototype.renderImage = function () {
             this.context.putImageData(this.image.getImageData(), 0, 0);
         };
@@ -451,9 +454,17 @@ var UI;
         GridView.prototype.render = function () {
             var _this = this;
             this.page.getImagePlace().html("");
-            this.imageCollection.getImages().forEach(function (img) {
-                _this.renderImage(img);
-            });
+            var images = this.imageCollection.getImages();
+            if (images.length > 0) {
+                var i = 0;
+                var intervalId = setInterval(function () {
+                    _this.renderImage(images[i]);
+                    i++;
+                    if (i == images.length) {
+                        clearInterval(intervalId);
+                    }
+                }, 10);
+            }
         };
         GridView.prototype.selected = function () {
             var ids = [];
@@ -654,12 +665,17 @@ var UI;
             else {
                 alert('GROUP!!!');
             }
+            return editorModule;
         };
         ModuleInitialization.initAction = function ($button, editorModule, editor) {
         };
         ModuleInitialization.initDelegate = function ($button, editorModule, editor) {
             $button.click(function () {
+                if (editor.UI().getActiveModule() != null) {
+                    editor.UI().getActiveModule().deinit();
+                }
                 editorModule.init(editor.UI().showPopover(editorModule.html()));
+                editor.UI().setActiveModule(editorModule);
                 return false;
             });
         };
@@ -681,6 +697,7 @@ var UI;
             this.editor = editor;
             this.images = images;
             this.page = null;
+            this.activeModule = null;
             this.$el.html(nunjucks.render('editor.html.njs', {}));
             var $fileLoader = this.$el.find('#rsFileInput');
             $fileLoader.on('change', function () {
@@ -707,6 +724,12 @@ var UI;
         Editor.prototype.initModule = function ($button, editorModule) {
             UI.ModuleInitialization.init($button, editorModule, this.editor);
         };
+        Editor.prototype.getActiveModule = function () {
+            return this.activeModule;
+        };
+        Editor.prototype.setActiveModule = function (editorModule) {
+            this.activeModule = editorModule;
+        };
         Editor.prototype.initToolbar = function ($toolbar) {
             var _this = this;
             $toolbar.find('#t-button__redo').click(function () {
@@ -717,6 +740,9 @@ var UI;
                 _this.undo();
                 return false;
             });
+        };
+        Editor.prototype.getView = function () {
+            return this.getPage().getView();
         };
         Editor.prototype.redo = function () {
             var _this = this;
@@ -1045,6 +1071,8 @@ var Modules;
                 return false;
             });
         };
+        ColorModule.prototype.deinit = function () {
+        };
         ColorModule.prototype.icon = function () {
             return 'fa fa-image';
         };
@@ -1073,22 +1101,330 @@ var Modules;
     })();
     Modules.ColorModule = ColorModule;
 })(Modules || (Modules = {}));
+/// <reference path="../../Core/Image/RsImage.ts"/>
+/// <reference path="../../Core/Action/EditorAction.ts"/>
+var Modules;
+(function (Modules) {
+    var CropAction = (function () {
+        function CropAction(image, left, top, width, height) {
+            this.image = image;
+            this.left = left;
+            this.top = top;
+            this.width = width;
+            this.height = height;
+        }
+        CropAction.prototype.execute = function () {
+            return this.image.save();
+        };
+        CropAction.prototype.unExecute = function () {
+            return this.image.save();
+        };
+        return CropAction;
+    })();
+    Modules.CropAction = CropAction;
+})(Modules || (Modules = {}));
+/// <reference path="RsWidget.ts"/>
+var UI;
+(function (UI) {
+    var Widgets;
+    (function (Widgets) {
+        var RsResizableItem = (function (_super) {
+            __extends(RsResizableItem, _super);
+            function RsResizableItem($el, $parent, index) {
+                _super.call(this);
+                this.$el = $el;
+                this.$parent = $parent;
+                this.index = index;
+                this.itemHalfSize = 5;
+                this.init();
+            }
+            RsResizableItem.prototype.getElementCorners = function () {
+                var topLeft = { x: this.$el.position().left, y: this.$el.position().top };
+                var topRight = { x: topLeft.x + this.$el.width(), y: topLeft.y };
+                var bottomRight = { x: topLeft.x + this.$el.width(), y: topLeft.y + this.$el.height() };
+                var bottomLeft = { x: topLeft.x, y: topLeft.y + this.$el.height() };
+                return {
+                    topLeft: topLeft,
+                    topRight: topRight,
+                    bottomRight: bottomRight,
+                    bottomLeft: bottomLeft
+                };
+            };
+            RsResizableItem.prototype.getPosition = function () {
+                return this.position;
+            };
+            RsResizableItem.prototype.getIndex = function () {
+                return this.index;
+            };
+            RsResizableItem.prototype.toPlace = function () {
+                var cord;
+                var elementCorners = this.getElementCorners();
+                if (this.index == 0) {
+                    cord = elementCorners.topLeft;
+                }
+                else if (this.index == 1) {
+                    cord = {
+                        x: elementCorners.topLeft.x + (elementCorners.topRight.x - elementCorners.topLeft.x) / 2,
+                        y: elementCorners.topRight.y
+                    };
+                }
+                else if (this.index == 2) {
+                    cord = elementCorners.topRight;
+                }
+                else if (this.index == 3) {
+                    cord = {
+                        x: elementCorners.topRight.x,
+                        y: elementCorners.topRight.y + (elementCorners.bottomRight.y - elementCorners.topRight.y) / 2
+                    };
+                }
+                else if (this.index == 4) {
+                    cord = elementCorners.bottomRight;
+                }
+                else if (this.index == 5) {
+                    cord = {
+                        x: elementCorners.topLeft.x + (elementCorners.topRight.x - elementCorners.topLeft.x) / 2,
+                        y: elementCorners.bottomRight.y
+                    };
+                }
+                else if (this.index == 6) {
+                    cord = elementCorners.bottomLeft;
+                }
+                else if (this.index == 7) {
+                    cord = {
+                        x: elementCorners.topLeft.x,
+                        y: elementCorners.topRight.y + (elementCorners.bottomRight.y - elementCorners.topRight.y) / 2
+                    };
+                }
+                this.position = cord;
+                this.$item.css({
+                    'left': (cord.x - this.itemHalfSize) + 'px',
+                    'top': (cord.y - this.itemHalfSize) + 'px'
+                });
+            };
+            RsResizableItem.prototype.init = function () {
+                var _this = this;
+                this.$item = $('<div class="rs-resizable-item item_' + this.index + '"></div>');
+                this.$parent.append(this.$item);
+                this.toPlace();
+                var $body = $(document);
+                this.$item.mousedown(function (downEvent) {
+                    var x = downEvent.clientX - parseInt(_this.$item.css('left')) - _this.itemHalfSize;
+                    var y = downEvent.clientY - parseInt(_this.$item.css('top')) - _this.itemHalfSize;
+                    $body.on('mousemove.RsResize_' + _this.index, function (moveEvent) {
+                        var pos = {
+                            x: moveEvent.clientX - x,
+                            y: moveEvent.clientY - y
+                        };
+                        _this.moveItem(pos);
+                        _this.trigger('move', {
+                            index: _this.index,
+                            newPosition: _this.position,
+                            oldPosition: {
+                                x: x,
+                                y: y
+                            }
+                        });
+                    });
+                    $body.on('mouseup.RsResize_' + _this.index, function () {
+                        $body.off('.RsResize_' + _this.index);
+                    });
+                });
+            };
+            RsResizableItem.prototype.moveItem = function (pos) {
+                var c = this.getElementCorners();
+                if ((this.index == 0) || (this.index == 7) || (this.index == 6)) {
+                    if (pos.x >= c.topRight.x - 10) {
+                        pos.x = c.topRight.x - 10;
+                    }
+                }
+                if ((this.index == 0) || (this.index == 1) || (this.index == 2)) {
+                    if (pos.y >= c.bottomRight.y - 10) {
+                        pos.y = c.bottomRight.y - 10;
+                    }
+                }
+                if ((this.index == 1) || (this.index == 5)) {
+                    this.$item.css({
+                        'top': (pos.y - 5) + 'px'
+                    });
+                }
+                else if ((this.index == 7) || (this.index == 3)) {
+                    this.$item.css({
+                        'left': (pos.x - 5) + 'px'
+                    });
+                }
+                else {
+                    this.$item.css({
+                        'left': (pos.x - 5) + 'px',
+                        'top': (pos.y - 5) + 'px'
+                    });
+                }
+                this.position = {
+                    x: parseInt(this.$item.css('left')) + 5,
+                    y: parseInt(this.$item.css('top')) + 5
+                };
+            };
+            return RsResizableItem;
+        })(Widgets.RsWidget);
+        var RsResizable = (function (_super) {
+            __extends(RsResizable, _super);
+            function RsResizable($el, $parent) {
+                var _this = this;
+                _super.call(this);
+                this.$el = $el;
+                this.$parent = $parent;
+                this.items = [];
+                this.$el.addClass('rs-resizable');
+                for (var i = 0; i < 8; i++) {
+                    var item = new RsResizableItem(this.$el, this.$parent, i);
+                    this.items.push(item);
+                    item.on('move', function (ev) {
+                        _this.onItemMove(ev.data.index, ev.data.newPosition, ev.data.oldPosition);
+                    });
+                }
+                var $body = $(document);
+                this.$el.mousedown(function (downEvent) {
+                    var x = downEvent.clientX - parseInt(_this.$el.css('left'));
+                    var y = downEvent.clientY - parseInt(_this.$el.css('top'));
+                    $body.on('mousemove.RsResize', function (moveEvent) {
+                        var pos = {
+                            x: moveEvent.clientX - x,
+                            y: moveEvent.clientY - y
+                        };
+                        _this.$el.css({
+                            'left': pos.x,
+                            'top': pos.y
+                        });
+                        _this.updateItems();
+                    });
+                    $body.on('mouseup.RsResize', function () {
+                        $body.off('.RsResize');
+                    });
+                });
+            }
+            RsResizable.prototype.onItemMove = function (index, newPosition, oldPosition) {
+                if (index == 0) {
+                    this.$el.css({
+                        left: newPosition.x + 'px',
+                        top: newPosition.y + 'px',
+                        width: (this.items[4].getPosition().x - newPosition.x) + 'px',
+                        height: (this.items[4].getPosition().y - newPosition.y) + 'px'
+                    });
+                    this.updateItems([4]);
+                }
+                else if (index == 1) {
+                    this.$el.css({
+                        top: newPosition.y + 'px',
+                        height: (this.items[4].getPosition().y - newPosition.y) + 'px'
+                    });
+                    this.updateItems([4]);
+                }
+                else if (index == 2) {
+                    this.$el.css({
+                        right: newPosition.x + 'px',
+                        top: newPosition.y + 'px',
+                        width: (newPosition.x - this.items[6].getPosition().x) + 'px',
+                        height: (this.items[6].getPosition().y - newPosition.y) + 'px'
+                    });
+                    this.updateItems([6]);
+                }
+                else if (index == 3) {
+                    this.$el.css({
+                        right: newPosition.x + 'px',
+                        width: (newPosition.x - this.items[6].getPosition().x) + 'px'
+                    });
+                    this.updateItems([6]);
+                }
+                else if (index == 4) {
+                    this.$el.css({
+                        right: newPosition.x + 'px',
+                        bottom: newPosition.y + 'px',
+                        width: (newPosition.x - this.items[0].getPosition().x) + 'px',
+                        height: (newPosition.y - this.items[0].getPosition().y) + 'px'
+                    });
+                    this.updateItems([0]);
+                }
+                else if (index == 5) {
+                    this.$el.css({
+                        bottom: newPosition.y + 'px',
+                        height: (newPosition.y - this.items[0].getPosition().y) + 'px'
+                    });
+                    this.updateItems([0]);
+                }
+                else if (index == 6) {
+                    this.$el.css({
+                        left: newPosition.x + 'px',
+                        bottom: newPosition.y + 'px',
+                        width: (this.items[2].getPosition().x - newPosition.x) + 'px',
+                        height: (newPosition.y - this.items[2].getPosition().y) + 'px'
+                    });
+                    this.updateItems([2]);
+                }
+                else if (index == 7) {
+                    this.$el.css({
+                        left: newPosition.x + 'px',
+                        width: (this.items[2].getPosition().x - newPosition.x) + 'px'
+                    });
+                    this.updateItems([2]);
+                }
+            };
+            RsResizable.prototype.getBounds = function () {
+                return {
+                    width: this.$el.width(),
+                    height: this.$el.height(),
+                    left: this.items[0].getPosition().x,
+                    top: this.items[0].getPosition().y
+                };
+            };
+            RsResizable.prototype.updateItems = function (stopItem) {
+                if (stopItem === void 0) { stopItem = []; }
+                this.trigger('resize', {
+                    width: this.$el.width(),
+                    height: this.$el.height(),
+                    left: this.items[0].getPosition().x,
+                    top: this.items[0].getPosition().y
+                });
+                this.items.forEach(function (item) {
+                    if (!_.contains(stopItem, item.getIndex())) {
+                        item.toPlace();
+                    }
+                });
+            };
+            return RsResizable;
+        })(Widgets.RsWidget);
+        Widgets.RsResizable = RsResizable;
+    })(Widgets = UI.Widgets || (UI.Widgets = {}));
+})(UI || (UI = {}));
 /// <reference path="../../Core/Module/HtmlModule.ts"/>
 /// <reference path="../../Core/RsImageEditor.ts"/>
+/// <reference path="../../UI/Widgets/RsResizable.ts"/>
 var Modules;
 (function (Modules) {
     var CropModule = (function () {
         function CropModule(editor) {
             this.editor = editor;
+            this.view = null;
         }
         CropModule.prototype.html = function () {
             return nunjucks.render('crop.dialog.html.njs', {});
         };
-        CropModule.prototype.init = function ($el) {
-            if (this.editor.UI().getType() == 0 /* SINGLE */) {
-                var $canvas = this.editor.UI().getImagePlace().find('canvas');
+        CropModule.prototype.deinit = function () {
+            if (this.view != null) {
+                this.$cropRect.remove();
+                this.view.getAreaElement().find('.rs-resizable-item').remove();
             }
-            //
+        };
+        CropModule.prototype.init = function ($el) {
+            var _this = this;
+            if (this.editor.UI().getType() == 0 /* SINGLE */) {
+                this.view = this.editor.UI().getView();
+                this.$cropRect = $('<div class="crop-rect"></div>');
+                this.view.getAreaElement().append(this.$cropRect);
+                this.cropResizableWidget = new UI.Widgets.RsResizable(this.$cropRect, this.view.getAreaElement());
+                $('#crop_ok').click(function () {
+                    var b = _this.cropResizableWidget.getBounds();
+                    _this.doAction(b.left, b.top, b.width, b.height);
+                });
+            }
         };
         CropModule.prototype.icon = function () {
             return 'fa fa-crop';
@@ -1102,7 +1438,7 @@ var Modules;
         CropModule.prototype.name = function () {
             return 'crop';
         };
-        CropModule.prototype.doAction = function () {
+        CropModule.prototype.doAction = function (left, top, width, height) {
         };
         return CropModule;
     })();
@@ -1144,6 +1480,8 @@ var Modules;
         }
         ResizeModule.prototype.html = function () {
             return nunjucks.render('resize.dialog.html.njs', {});
+        };
+        ResizeModule.prototype.deinit = function () {
         };
         ResizeModule.prototype.init = function ($el) {
             var _this = this;

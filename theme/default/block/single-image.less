@@ -7,14 +7,19 @@
   max-width: 100%;
   overflow-x: scroll;
 
-  position: relative;
-
   .box-shadow(0, 0, 5px, 0, rgba(0, 0, 0, 0.5));
-
-  canvas {
-    line-height: 0;
-  }
 
   line-height: 0;
   box-sizing: border-box;
+
+  .rs-canvas-place {
+    position: relative;
+    display: inline-block;
+
+    canvas {
+      display: block;
+    }
+
+    box-sizing: border-box;
+  }
 }

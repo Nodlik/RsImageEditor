@@ -4,16 +4,24 @@ module.exports = (grunt) ->
     pkg: grunt.file.readJSON 'package.json'
 
     less:
-      default:
+      theme:
         options:
           paths: ['theme/default']
           cleancss: true
-          report: 'gzip'
           compress: true,
           yuicompress: true,
           optimization: 2
         files:
           'build/css/rs-editor-default.css': 'theme/default/rs-editor.less'
+      modules:
+        options:
+          paths: ['src/Modules']
+          cleancss: true
+          compress: true,
+          yuicompress: true,
+          optimization: 2
+        files:
+          'build/css/modules.css': 'src/Modules/**/*.less'
 
     watch:
       typeescript:
@@ -23,7 +31,7 @@ module.exports = (grunt) ->
         files: ['src/**/*.twig']
         tasks: ['nunjucks']
       less:
-        files: ['theme/**/*.less']
+        files: ['theme/**/*.less', 'src/Modules/**/*.less']
         tasks: ['less']
 
     typescript:
@@ -61,37 +69,37 @@ module.exports = (grunt) ->
           ,
             expand: true
             src: 'packages/js/jquery/dist/jquery.min.js'
-            dest: 'build/'
+            dest: 'build/lib/'
             flatten: true,
             filter: 'isFile'
           ,
             expand: true
             src: 'packages/js/jquery/dist/jquery.min.map'
-            dest: 'build/'
+            dest: 'build/lib/'
             flatten: true,
             filter: 'isFile'
           ,
             expand: true
             src: 'packages/js/underscore/underscore-min.js'
-            dest: 'build/'
+            dest: 'build/lib/'
             flatten: true,
             filter: 'isFile'
           ,
             expand: true
             src: 'packages/js/underscore/underscore-min.map'
-            dest: 'build/'
+            dest: 'build/lib/'
             flatten: true,
             filter: 'isFile'
           ,
             expand: true
-            src: 'packages/js/nunjucks/browser/nunjucks.min.js'
-            dest: 'build/'
+            src: 'packages/js/nunjucks/browser/nunjucks-slim.min.js'
+            dest: 'build/lib/'
             flatten: true,
             filter: 'isFile'
           ,
             expand: true
             src: 'packages/js/caman/dist/caman.pack.js'
-            dest: 'build/'
+            dest: 'build/lib/'
             flatten: true,
             filter: 'isFile'
         ]
@@ -104,6 +112,12 @@ module.exports = (grunt) ->
       dist:
         files:
           'build/rs-image-editor.min.js': [
+            'build/template.js'
+            'build/rs-image-editor.js'
+          ],
+          'build/rs-image-editor.full.min.js': [
+            'build/lib/caman.pack.js'
+            'build/lib/nunjucks-slim.min.js'
             'build/template.js'
             'build/rs-image-editor.js'
           ]
@@ -119,9 +133,10 @@ module.exports = (grunt) ->
 
   grunt.registerTask('build', [
     'clean:build'
-    'less'
+    'less:theme'
+    'less:modules'
     'typescript'
     'nunjucks'
-    'uglify'
     'copy'
+    'uglify'
   ])

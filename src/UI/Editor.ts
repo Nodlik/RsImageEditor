@@ -11,6 +11,8 @@ module UI {
         private $toolbarPlace: JQuery;
         private $popOver: JQuery;
 
+        private activeModule: Core.EditorModule = null;
+
         constructor(private $el: JQuery, private editor: Core.RsImageEditor, private images: Core.ImageCollection)
         {
             this.$el.html(nunjucks.render('editor.html.njs', {}));
@@ -54,6 +56,15 @@ module UI {
             ModuleInitialization.init($button, editorModule, this.editor);
         }
 
+        getActiveModule(): Core.EditorModule {
+            return this.activeModule;
+        }
+
+        setActiveModule(editorModule: Core.EditorModule) {
+            this.activeModule = editorModule;
+        }
+
+
         initToolbar($toolbar: JQuery) {
             $toolbar.find('#t-button__redo').click(() => {
                 this.redo();
@@ -66,6 +77,10 @@ module UI {
 
                 return false;
             });
+        }
+
+        getView(): ViewInterface {
+            return this.getPage().getView();
         }
 
         redo() {

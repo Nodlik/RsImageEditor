@@ -1,20 +1,44 @@
 /// <reference path="../../Core/Module/HtmlModule.ts"/>
 /// <reference path="../../Core/RsImageEditor.ts"/>
+/// <reference path="../../UI/Widgets/RsResizable.ts"/>
 
 module Modules {
     export class CropModule implements Core.HtmlModule
     {
+        private $cropRect: JQuery;
+        private cropResizableWidget: UI.Widgets.RsResizable;
+        private view: UI.SingleView = null;
+
         constructor(private editor: Core.RsImageEditor) {}
 
         html() {
             return nunjucks.render('crop.dialog.html.njs', {});
         }
 
+        deinit() {
+            if (this.view != null) {
+                this.$cropRect.remove();
+                this.view.getAreaElement().find('.rs-resizable-item').remove();
+            }
+        }
+
         init($el: JQuery) {
             if (this.editor.UI().getType() == Core.ModuleViewType.SINGLE) {
-                var $canvas = this.editor.UI().getImagePlace().find('canvas');
+                this.view = <UI.SingleView>this.editor.UI().getView();
+
+                this.$cropRect = $('<div class="crop-rect"></div>');
+                this.view.getAreaElement().append(this.$cropRect);
+
+                this.cropResizableWidget = new UI.Widgets.RsResizable(this.$cropRect, this.view.getAreaElement());
+
+                $('#crop_ok').click(() => {
+                    var b = this.cropResizableWidget.getBounds();
+
+                    this.doAction(
+                        b.left, b.top, b.width, b.height
+                    );
+                });
             }
-            //
         }
 
         icon() {
@@ -33,7 +57,7 @@ module Modules {
             return 'crop';
         }
 
-        doAction() {
+        doAction(left: number, top: number, width: number, height: number) {
 
         }
     }

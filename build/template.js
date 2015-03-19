@@ -20,7 +20,7 @@ var lineno = null;
 var colno = null;
 var output = "";
 try {
-output += "<div>\n</div>";
+output += "<div>\n    <button id=\"crop_ok\">OK!</button>\n</div>";
 cb(null, output);
 ;
 } catch (e) {
@@ -96,7 +96,7 @@ var lineno = null;
 var colno = null;
 var output = "";
 try {
-output += "<div class=\"rs-single-image\" id=\"rsSingleImage\">\n\n</div>";
+output += "<div class=\"rs-single-image\">\n    <div class=\"rs-canvas-place\" id=\"rsSingleImage\">\n    </div>\n</div>";
 cb(null, output);
 ;
 } catch (e) {

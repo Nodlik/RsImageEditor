@@ -6,6 +6,13 @@ module UI.Widgets {
         y: number;
     }
 
+    interface ElementBounds {
+        left: number;
+        top: number;
+        width: number;
+        height: number;
+    }
+
     interface ItemCorners {
         topLeft: Point;
         topRight: Point;
@@ -283,6 +290,15 @@ module UI.Widgets {
 
                 this.updateItems([2]);
             }
+        }
+
+        public getBounds(): ElementBounds {
+            return {
+                width: this.$el.width(),
+                height: this.$el.height(),
+                left: this.items[0].getPosition().x,
+                top: this.items[0].getPosition().y
+            };
         }
 
         private updateItems(stopItem: number[] = []) {

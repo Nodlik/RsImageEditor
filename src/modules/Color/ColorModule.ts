@@ -19,6 +19,10 @@ module Modules {
             });
         }
 
+        deinit() {
+
+        }
+
         icon() {
             return 'fa fa-image'
         }
