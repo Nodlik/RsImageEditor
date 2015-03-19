@@ -1,5 +1,4 @@
 /// <reference path="../../Core/Image/RsImage.ts"/>
-/// <reference path="../../Core/Image/ImageResizer.ts"/>
 /// <reference path="../../Core/Action/EditorAction.ts"/>
 
 module Modules {

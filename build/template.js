@@ -15,6 +15,23 @@ root: root
 };
 })();
 })();
+(function() {(window.nunjucksPrecompiled = window.nunjucksPrecompiled || {})["crop.dialog.html.njs"] = (function() {function root(env, context, frame, runtime, cb) {
+var lineno = null;
+var colno = null;
+var output = "";
+try {
+output += "<div>\n</div>";
+cb(null, output);
+;
+} catch (e) {
+  cb(runtime.handleError(e, lineno, colno));
+}
+}
+return {
+root: root
+};
+})();
+})();
 (function() {(window.nunjucksPrecompiled = window.nunjucksPrecompiled || {})["resize.dialog.html.njs"] = (function() {function root(env, context, frame, runtime, cb) {
 var lineno = null;
 var colno = null;
@@ -56,9 +73,9 @@ var output = "";
 try {
 output += "<div class=\"rs-image\" data-id=\"";
 output += runtime.suppressValue(runtime.memberLookup((runtime.contextOrFrameLookup(context, frame, "image")),"id", env.autoesc), env.autoesc);
-output += "\">\n    <div class=\"rs-image-block\">\n        <img src=\"";
+output += "\">\n    <div class=\"rs-image-block\">\n        <!--<img src=\"";
 output += runtime.suppressValue(runtime.memberLookup((runtime.contextOrFrameLookup(context, frame, "image")),"src", env.autoesc), env.autoesc);
-output += "\" />\n    </div>\n    <div class=\"rs-image-data\">\n        <div class=\"rs-image-data__inf\">\n            <div class=\"rs-image-data__label\">";
+output += "\" />-->\n    </div>\n    <div class=\"rs-image-data\">\n        <div class=\"rs-image-data__inf\">\n            <div class=\"rs-image-data__label\">";
 output += runtime.suppressValue(runtime.memberLookup((runtime.contextOrFrameLookup(context, frame, "image")),"label", env.autoesc), env.autoesc);
 output += "</div>\n            <div class=\"rs-image-data__name\">";
 output += runtime.suppressValue(runtime.memberLookup((runtime.contextOrFrameLookup(context, frame, "image")),"name", env.autoesc), env.autoesc);

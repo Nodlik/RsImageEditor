@@ -1,6 +1,6 @@
 <div class="rs-image" data-id="{{ image.id }}">
     <div class="rs-image-block">
-        <img src="{{ image.src }}" />
+        <!--<img src="{{ image.src }}" />-->
     </div>
     <div class="rs-image-data">
         <div class="rs-image-data__inf">

@@ -24,16 +24,32 @@ module UI {
         }
 
         private renderImage(image: Core.RsImage) {
-            this.page.getImagePlace().append($(
+            var $block = $(
                 nunjucks.render('grid.image.html.njs', {
-                        image: {
-                            src: image.getImageBase64(),
-                            name: image.getName(),
-                            id: image.getId(),
-                            label: image.getLabel()
-                        }
-                    })
-            ));
+                    image: {
+                        //src: image.getImageBase64(),
+                        name: image.getName(),
+                        id: image.getId(),
+                        label: image.getLabel()
+                    }
+                })
+            );
+            this.page.getImagePlace().append($block);
+
+            var $canvas = $('<canvas id="' + image.getId() + '"></canvas>');
+            $block.find('.rs-image-block').append($canvas);
+            var c = <HTMLCanvasElement>$canvas[0];
+            var ctx = c.getContext('2d');
+
+            c.width = 150;
+            c.height = 120;
+
+            // todo keep ratio
+            new Core.ImageResizer(image.getImageData(), 150, 120).resize().then(
+                (imageData) => {
+                    ctx.putImageData(imageData, 0, 0);
+                }
+            );
         }
     }
 }

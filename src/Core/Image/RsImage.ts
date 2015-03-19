@@ -84,9 +84,11 @@ module Core {
                         (resolve, reject) => {
                             var self = this;
                             Caman(canvas, function() {
-                                this.brightness(self.brightness);
+                                var caman = <CamanObject>this;
 
-                                this.render(() => {
+                                caman.brightness(self.brightness);
+
+                                caman.render(() => {
                                     resolve(context.getImageData(0, 0, imageData.width, imageData.height));
                                 });
                             });

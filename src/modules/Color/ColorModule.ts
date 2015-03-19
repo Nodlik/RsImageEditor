@@ -1,5 +1,6 @@
 /// <reference path="../../Core/Module/HtmlModule.ts"/>
 /// <reference path="../../Core/RsImageEditor.ts"/>
+/// <reference path="../../UI/Widgets/RsSlider.ts"/>
 
 module Modules {
     export class ColorModule implements Core.HtmlModule

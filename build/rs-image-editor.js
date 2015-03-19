@@ -109,8 +109,9 @@ var Core;
                 return new Promise(function (resolve, reject) {
                     var self = _this;
                     Caman(canvas, function () {
-                        this.brightness(self.brightness);
-                        this.render(function () {
+                        var caman = this;
+                        caman.brightness(self.brightness);
+                        caman.render(function () {
                             resolve(context.getImageData(0, 0, imageData.width, imageData.height));
                         });
                     });
@@ -462,14 +463,25 @@ var UI;
             return this.imageCollection.findImage(ids);
         };
         GridView.prototype.renderImage = function (image) {
-            this.page.getImagePlace().append($(nunjucks.render('grid.image.html.njs', {
+            var $block = $(nunjucks.render('grid.image.html.njs', {
                 image: {
-                    src: image.getImageBase64(),
+                    //src: image.getImageBase64(),
                     name: image.getName(),
                     id: image.getId(),
                     label: image.getLabel()
                 }
-            })));
+            }));
+            this.page.getImagePlace().append($block);
+            var $canvas = $('<canvas id="' + image.getId() + '"></canvas>');
+            $block.find('.rs-image-block').append($canvas);
+            var c = $canvas[0];
+            var ctx = c.getContext('2d');
+            c.width = 150;
+            c.height = 120;
+            // todo keep ratio
+            new Core.ImageResizer(image.getImageData(), 150, 120).resize().then(function (imageData) {
+                ctx.putImageData(imageData, 0, 0);
+            });
         };
         return GridView;
     })();
@@ -802,6 +814,7 @@ var Core;
             this.modules = {};
             this.registerModule('resize', new Modules.ResizeModule(this.editor), 2 /* ANY */);
             this.registerModule('color', new Modules.ColorModule(this.editor), 2 /* ANY */);
+            this.registerModule('crop', new Modules.CropModule(this.editor), 2 /* ANY */);
         }
         ModuleManager.prototype.registerModule = function (name, editorModule, type) {
             if (!(name in this.modules)) {
@@ -916,8 +929,106 @@ var Core;
     })();
     Core.RsImageEditor = RsImageEditor;
 })(Core || (Core = {}));
+var UI;
+(function (UI) {
+    var Widgets;
+    (function (Widgets) {
+        var RsWidget = (function () {
+            function RsWidget() {
+                this.events = {};
+            }
+            RsWidget.prototype.on = function (eventName, callback, eventNamespace) {
+                if (eventNamespace === void 0) { eventNamespace = '_'; }
+                if (!_.has(this.events, eventName)) {
+                    this.events[eventName] = {};
+                }
+                if (!_.has(this.events[eventName], eventNamespace)) {
+                    this.events[eventName][eventNamespace] = [];
+                }
+                this.events[eventName][eventNamespace].push(callback);
+            };
+            RsWidget.prototype.off = function (eventNamespace) {
+                var _this = this;
+                if (eventNamespace === void 0) { eventNamespace = '_'; }
+                _.map(this.events, function (event, eventName) {
+                    _this.events[eventName] = _.omit(event, eventNamespace);
+                });
+            };
+            RsWidget.prototype.trigger = function (eventName, data) {
+                var _this = this;
+                if (data === void 0) { data = null; }
+                if (_.has(this.events, eventName)) {
+                    _.map(this.events[eventName], function (callbacks, eventNamespace) {
+                        callbacks.forEach(function (f) {
+                            f({
+                                data: data,
+                                widget: _this
+                            });
+                        });
+                    });
+                }
+            };
+            return RsWidget;
+        })();
+        Widgets.RsWidget = RsWidget;
+    })(Widgets = UI.Widgets || (UI.Widgets = {}));
+})(UI || (UI = {}));
+/// <reference path="RsWidget.ts"/>
+var UI;
+(function (UI) {
+    var Widgets;
+    (function (Widgets) {
+        var RsSlider = (function (_super) {
+            __extends(RsSlider, _super);
+            function RsSlider($el, min, max, step, start) {
+                var _this = this;
+                if (step === void 0) { step = 1; }
+                if (start === void 0) { start = 0; }
+                _super.call(this);
+                this.$el = $el;
+                this.min = min;
+                this.max = max;
+                this.step = step;
+                this.start = start;
+                this.$slider = $('<div class="rs-slider-handle"></div>');
+                this.$el.html("");
+                this.$el.addClass('rs-slider');
+                this.$el.append(this.$slider);
+                this.$slider.css('left', this.getPixelPos(this.start) + 'px');
+                var $body = $(document);
+                this.$slider.mousedown(function (downEvent) {
+                    var x = downEvent.clientX - parseInt(_this.$slider.css('left'));
+                    $body.on('mousemove.RsSlider', function (moveEvent) {
+                        var pos = moveEvent.clientX - x;
+                        if (pos < 0) {
+                            pos = 0;
+                        }
+                        var size = _this.$el.width() - _this.$slider.width();
+                        if (pos > size) {
+                            pos = size;
+                        }
+                        _this.$slider.css('left', pos + 'px');
+                        _this.trigger('move', _this.getVal(pos));
+                    });
+                    $body.on('mouseup.RsSlider', function () {
+                        $body.off('.RsSlider');
+                    });
+                });
+            }
+            RsSlider.prototype.getVal = function (pixelPos) {
+                return Math.round((pixelPos * ((this.max - this.min) / this.step)) / (this.$el.width() - this.$slider.width())) * this.step + this.min;
+            };
+            RsSlider.prototype.getPixelPos = function (val) {
+                return (((val - this.min) / this.step) * (this.$el.width() - this.$slider.width())) / ((this.max - this.min) / this.step);
+            };
+            return RsSlider;
+        })(Widgets.RsWidget);
+        Widgets.RsSlider = RsSlider;
+    })(Widgets = UI.Widgets || (UI.Widgets = {}));
+})(UI || (UI = {}));
 /// <reference path="../../Core/Module/HtmlModule.ts"/>
 /// <reference path="../../Core/RsImageEditor.ts"/>
+/// <reference path="../../UI/Widgets/RsSlider.ts"/>
 var Modules;
 (function (Modules) {
     var ColorModule = (function () {
@@ -962,8 +1073,42 @@ var Modules;
     })();
     Modules.ColorModule = ColorModule;
 })(Modules || (Modules = {}));
+/// <reference path="../../Core/Module/HtmlModule.ts"/>
+/// <reference path="../../Core/RsImageEditor.ts"/>
+var Modules;
+(function (Modules) {
+    var CropModule = (function () {
+        function CropModule(editor) {
+            this.editor = editor;
+        }
+        CropModule.prototype.html = function () {
+            return nunjucks.render('crop.dialog.html.njs', {});
+        };
+        CropModule.prototype.init = function ($el) {
+            if (this.editor.UI().getType() == 0 /* SINGLE */) {
+                var $canvas = this.editor.UI().getImagePlace().find('canvas');
+            }
+            //
+        };
+        CropModule.prototype.icon = function () {
+            return 'fa fa-crop';
+        };
+        CropModule.prototype.type = function () {
+            return 1 /* DELEGATE */;
+        };
+        CropModule.prototype.parent = function () {
+            return null;
+        };
+        CropModule.prototype.name = function () {
+            return 'crop';
+        };
+        CropModule.prototype.doAction = function () {
+        };
+        return CropModule;
+    })();
+    Modules.CropModule = CropModule;
+})(Modules || (Modules = {}));
 /// <reference path="../../Core/Image/RsImage.ts"/>
-/// <reference path="../../Core/Image/ImageResizer.ts"/>
 /// <reference path="../../Core/Action/EditorAction.ts"/>
 var Modules;
 (function (Modules) {
