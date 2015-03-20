@@ -12,15 +12,26 @@ module Modules {
         }
 
         init($el: JQuery) {
-            $el.find('.m_color-ok').click(() => {
-                this.doAction($el.find('.m_color-brightness').val());
+            var brightness = 0;
+            var vibrance = 0;
+            if (this.editor.UI().getType() == Core.ModuleViewType.SINGLE) {
+                var img = this.editor.UI().selected()[0];
 
-                return false;
+                brightness = img.brightness;
+                vibrance = img.vibrance;
+            }
+
+            new UI.Widgets.RsSlider( $el.find('#brightnessSlider'), -100, 100, 1, brightness).on('stopmove', (e) => {
+               this.doAction(BrightnessAction, e.data);
+            });
+
+            new UI.Widgets.RsSlider( $el.find('#vibranceSlider'), -200, 200, 5, vibrance).on('stopmove', (e) => {
+                this.doAction(VibranceAction, e.data);
             });
         }
 
         deinit() {
-
+            this.editor.UI().clearPopover();
         }
 
         icon() {
@@ -36,22 +47,21 @@ module Modules {
         }
 
         name() {
-            return 'resize';
+            return 'color';
         }
 
-        doAction(brightness: number) {
+        doAction(action, value: number) {
             var promiseArray: Promise<Core.RsImage>[] = [];
 
             this.editor.UI().selected().forEach((img: Core.RsImage) =>
                 {
-                    //img.getActionDispatcher().createAction(BrightnessAction);
-                    var act = new BrightnessAction(img, brightness);
+                    var act = new action(img, value);
                     promiseArray.push(img.getActionDispatcher().process(act));
                 }
             );
 
             Promise.all(promiseArray).then(() => {
-                this.editor.UI().getPage().getView().render();
+                this.editor.UI().render();
             });
         }
     }

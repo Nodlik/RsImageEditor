@@ -44,11 +44,25 @@ module UI {
             this.getToolbar().render();
 
             this.getImagePlace().html("");
+
+            var inf = this.getView().getInformation();
+            if (inf != '') {
+                this.getInformationPlace().parent().show();
+                this.getInformationPlace().html(inf);
+            }
+            else {
+                this.getInformationPlace().parent().hide();
+            }
+
             this.getView().render();
         }
 
         getImagePlace(): JQuery {
             return this.editor.getImagePlace();
+        }
+
+        getInformationPlace(): JQuery {
+            return this.editor.getInformationPlace();
         }
     }
 }

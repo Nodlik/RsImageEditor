@@ -27,6 +27,19 @@
 
     display: inline-block;
 
+    &.active {
+      background-color: @decorationColor;
+
+      * {
+        color: @backgroundColor;
+      }
+
+      &:hover {
+        background-color: @decorationColor;
+        color: @backgroundColor;
+      }
+    }
+
     i {
       width: 40px;
       line-height: @widgetSize;

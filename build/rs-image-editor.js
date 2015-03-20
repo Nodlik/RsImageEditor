@@ -11,9 +11,10 @@ var Core;
             this.actionsResult = [];
         }
         ActionDispatcher.prototype.process = function (action) {
-            this.actions = this.actions.splice(this.current);
+            this.actions.splice(this.current + 1);
             this.actions.push(action);
             this.current++;
+            this.actionsResult.splice(this.current);
             this.actionsResult.push(this.doAction(action.execute, action));
             return _.last(this.actionsResult);
         };
@@ -62,6 +63,18 @@ var Core;
             this.id = '';
             this.actionDispatcher = null;
             this.imageBase64 = ''; // BASE 64 processed image
+            this.brightness = 0;
+            this.vibrance = 0;
+            this.hue = 0;
+            this.gamma = 0;
+            this.clip = 0;
+            this.stackBlur = 0;
+            this.contrast = 0;
+            this.saturation = 0;
+            this.exposure = 0;
+            this.sepia = 0;
+            this.noise = 0;
+            this.sharpen = 0;
             this.actionDispatcher = new Core.ActionDispatcher(this);
         }
         RsImage.prototype.create = function (imageBase64) {
@@ -75,6 +88,7 @@ var Core;
                     canvas.height = img.height;
                     context.drawImage(img, 0, 0);
                     _this.originalImage = context.getImageData(0, 0, img.width, img.height);
+                    _this.imageBase64 = canvas.toDataURL(_this.imageType, 0.8);
                     _this.init();
                     resolve(_this);
                 });
@@ -135,6 +149,7 @@ var Core;
                     Caman(canvas, function () {
                         var caman = this;
                         caman.brightness(self.brightness);
+                        caman.vibrance(self.vibrance);
                         caman.render(function () {
                             resolve(context.getImageData(0, 0, imageData.width, imageData.height));
                         });
@@ -147,9 +162,12 @@ var Core;
                 canvas.width = _this.processedImage.width;
                 canvas.height = _this.processedImage.height;
                 context.putImageData(_this.processedImage, 0, 0);
-                _this.imageBase64 = canvas.toDataURL();
+                _this.imageBase64 = canvas.toDataURL(_this.imageType, 0.8);
                 return _this;
             });
+        };
+        RsImage.prototype.getSize = function () {
+            return Math.round(atob(this.getImageBase64().substr(this.getImageBase64().indexOf(';base64') + 8)).length / (1000));
         };
         RsImage.prototype.getImageData = function () {
             return this.processedImage;
@@ -165,6 +183,9 @@ var Core;
         };
         RsImage.prototype.getLabel = function () {
             return '';
+        };
+        RsImage.prototype.getType = function () {
+            return this.imageType;
         };
         RsImage.prototype.getImageBase64 = function () {
             return this.imageBase64;
@@ -401,6 +422,33 @@ var Core;
                 this.images.splice(idx, 1);
             }
         };
+        ImageCollection.prototype.getResolutionStats = function () {
+            var min = {
+                width: this.images[0].width,
+                height: this.images[0].height
+            };
+            var max = {
+                width: 0,
+                height: 0
+            };
+            this.images.forEach(function (img) {
+                if ((img.width * img.height) < (min.width * min.height)) {
+                    min.width = img.width;
+                    min.height = img.height;
+                }
+                if ((img.width * img.height) > (max.width * max.height)) {
+                    max.width = img.width;
+                    max.height = img.height;
+                }
+            });
+            return {
+                min: min,
+                max: max
+            };
+        };
+        ImageCollection.prototype.count = function () {
+            return this.images.length;
+        };
         ImageCollection.prototype.getImages = function () {
             return this.images;
         };
@@ -448,6 +496,13 @@ var UI;
         SingleView.prototype.getAreaElement = function () {
             return this.page.getImagePlace().find('#rsSingleImage');
         };
+        SingleView.prototype.getInformation = function () {
+            return nunjucks.render('single.information.html.njs', {
+                resolution: this.image.width + 'x' + this.image.height,
+                size: this.image.getSize() + ' kb',
+                type: this.image.getType()
+            });
+        };
         SingleView.prototype.renderImage = function () {
             this.context.putImageData(this.image.getImageData(), 0, 0);
         };
@@ -489,6 +544,17 @@ var UI;
                     }
                 }, 10);
             }
+        };
+        GridView.prototype.getInformation = function () {
+            if (this.imageCollection.count() > 0) {
+                var r = this.imageCollection.getResolutionStats();
+                return nunjucks.render('grid.information.html.njs', {
+                    count: this.imageCollection.count(),
+                    minResolution: r.min.width + 'x' + r.min.height,
+                    maxResolution: r.max.width + 'x' + r.max.height
+                });
+            }
+            return '';
         };
         GridView.prototype.selected = function () {
             var ids = [];
@@ -665,10 +731,21 @@ var UI;
         Page.prototype.render = function () {
             this.getToolbar().render();
             this.getImagePlace().html("");
+            var inf = this.getView().getInformation();
+            if (inf != '') {
+                this.getInformationPlace().parent().show();
+                this.getInformationPlace().html(inf);
+            }
+            else {
+                this.getInformationPlace().parent().hide();
+            }
             this.getView().render();
         };
         Page.prototype.getImagePlace = function () {
             return this.editor.getImagePlace();
+        };
+        Page.prototype.getInformationPlace = function () {
+            return this.editor.getInformationPlace();
         };
         return Page;
     })();
@@ -694,14 +771,20 @@ var UI;
         ModuleInitialization.initAction = function ($button, editorModule, editor) {
         };
         ModuleInitialization.initDelegate = function ($button, editorModule, editor) {
+            var _this = this;
             $button.click(function () {
-                if (editor.UI().getActiveModule() != null) {
-                    editor.UI().getActiveModule().deinit();
-                }
-                editorModule.init(editor.UI().showPopover(editorModule.html()));
-                editor.UI().setActiveModule(editorModule);
-                return false;
+                $('.rs-toolbar-button').removeClass('active');
+                $button.addClass('active');
+                _this.renderModule(editorModule, editor);
             });
+        };
+        ModuleInitialization.renderModule = function (editorModule, editor) {
+            if (editor.UI().getActiveModule() != null) {
+                editor.UI().getActiveModule().deinit();
+            }
+            editorModule.init(editor.UI().showPopover(editorModule.html()));
+            editor.UI().setActiveModule(editorModule);
+            return false;
         };
         return ModuleInitialization;
     })();
@@ -744,6 +827,7 @@ var UI;
             this.$toolbarPlace = this.$el.find('#rsToolbarPlace');
             this.$popOver = this.$el.find('#rsPopover');
             this.$imagePlace = this.$el.find('#rsImagePlace');
+            this.$informationPlace = this.$el.find('#rsInformation');
         }
         Editor.prototype.initModule = function ($button, editorModule) {
             UI.ModuleInitialization.init($button, editorModule, this.editor);
@@ -756,6 +840,9 @@ var UI;
         };
         Editor.prototype.initToolbar = function ($toolbar) {
             var _this = this;
+            if (this.activeModule != null) {
+                $toolbar.find('#t-button__' + this.activeModule.name()).addClass('active');
+            }
             $toolbar.find('#t-button__redo').click(function () {
                 _this.redo();
                 return false;
@@ -775,7 +862,7 @@ var UI;
                 p.push(img.getActionDispatcher().redo());
             });
             Promise.all(p).then(function () {
-                _this.getPage().getView().render();
+                _this.render();
             });
         };
         Editor.prototype.undo = function () {
@@ -785,13 +872,17 @@ var UI;
                 p.push(img.getActionDispatcher().undo());
             });
             Promise.all(p).then(function () {
-                _this.getPage().getView().render();
+                _this.render();
             });
         };
         Editor.prototype.showPopover = function (content) {
             this.$popOver.html(content);
             this.$popOver.show();
             return this.$popOver;
+        };
+        Editor.prototype.clearPopover = function () {
+            this.$popOver.html("");
+            this.$popOver.hide();
         };
         Editor.prototype.back = function () {
             if (this.page.hasParent()) {
@@ -804,6 +895,9 @@ var UI;
         };
         Editor.prototype.getToolbarPlace = function () {
             return this.$toolbarPlace;
+        };
+        Editor.prototype.getInformationPlace = function () {
+            return this.$informationPlace;
         };
         /**
          * Get selected image in editor
@@ -825,7 +919,13 @@ var UI;
             return this.getPage().getView().type();
         };
         Editor.prototype.render = function () {
+            if (this.activeModule != null) {
+                this.activeModule.deinit();
+            }
             this.getPage().render();
+            if (this.activeModule != null) {
+                UI.ModuleInitialization.renderModule(this.activeModule, this.editor);
+            }
         };
         /**
          * Go to single image editor
@@ -862,9 +962,9 @@ var Core;
         function ModuleManager(editor) {
             this.editor = editor;
             this.modules = {};
-            this.registerModule('resize', new Modules.ResizeModule(this.editor), 2 /* ANY */);
+            this.registerModule('resize', new Modules.ResizeModule(this.editor), 0 /* SINGLE */);
             this.registerModule('color', new Modules.ColorModule(this.editor), 2 /* ANY */);
-            this.registerModule('crop', new Modules.CropModule(this.editor), 2 /* ANY */);
+            this.registerModule('crop', new Modules.CropModule(this.editor), 0 /* SINGLE */);
         }
         ModuleManager.prototype.registerModule = function (name, editorModule, type) {
             if (!(name in this.modules)) {
@@ -883,12 +983,15 @@ var Core;
         ModuleManager.prototype.getModules = function (type, parent) {
             if (type === void 0) { type = 2 /* ANY */; }
             if (parent === void 0) { parent = null; }
-            return _.map(this.modules, function (value) {
+            return _.map(_.filter(this.modules, function (value) {
                 if ((value.type == type) || (type == 2 /* ANY */) || (value.type == 2 /* ANY */)) {
                     if (value.module.parent() == parent) {
-                        return value.module;
+                        return true;
                     }
                 }
+                return false;
+            }), function (value) {
+                return value.module;
             });
         };
         return ModuleManager;
@@ -1061,9 +1164,15 @@ var UI;
                         _this.trigger('move', _this.getVal(pos));
                     });
                     $body.on('mouseup.RsSlider', function () {
+                        var newPos = parseInt(_this.$slider.css('left'));
+                        _this.trigger('stopmove', _this.getVal(newPos));
                         $body.off('.RsSlider');
                     });
                 });
+                this.on('move', function (e) {
+                    _this.$slider.text(e.data);
+                });
+                this.trigger('move', this.start);
             }
             RsSlider.prototype.getVal = function (pixelPos) {
                 return Math.round((pixelPos * ((this.max - this.min) / this.step)) / (this.$el.width() - this.$slider.width())) * this.step + this.min;
@@ -1090,12 +1199,22 @@ var Modules;
         };
         ColorModule.prototype.init = function ($el) {
             var _this = this;
-            $el.find('.m_color-ok').click(function () {
-                _this.doAction($el.find('.m_color-brightness').val());
-                return false;
+            var brightness = 0;
+            var vibrance = 0;
+            if (this.editor.UI().getType() == 0 /* SINGLE */) {
+                var img = this.editor.UI().selected()[0];
+                brightness = img.brightness;
+                vibrance = img.vibrance;
+            }
+            new UI.Widgets.RsSlider($el.find('#brightnessSlider'), -100, 100, 1, brightness).on('stopmove', function (e) {
+                _this.doAction(Modules.BrightnessAction, e.data);
+            });
+            new UI.Widgets.RsSlider($el.find('#vibranceSlider'), -200, 200, 5, vibrance).on('stopmove', function (e) {
+                _this.doAction(Modules.VibranceAction, e.data);
             });
         };
         ColorModule.prototype.deinit = function () {
+            this.editor.UI().clearPopover();
         };
         ColorModule.prototype.icon = function () {
             return 'fa fa-image';
@@ -1107,23 +1226,45 @@ var Modules;
             return null;
         };
         ColorModule.prototype.name = function () {
-            return 'resize';
+            return 'color';
         };
-        ColorModule.prototype.doAction = function (brightness) {
+        ColorModule.prototype.doAction = function (action, value) {
             var _this = this;
             var promiseArray = [];
             this.editor.UI().selected().forEach(function (img) {
-                //img.getActionDispatcher().createAction(BrightnessAction);
-                var act = new Modules.BrightnessAction(img, brightness);
+                var act = new action(img, value);
                 promiseArray.push(img.getActionDispatcher().process(act));
             });
             Promise.all(promiseArray).then(function () {
-                _this.editor.UI().getPage().getView().render();
+                _this.editor.UI().render();
             });
         };
         return ColorModule;
     })();
     Modules.ColorModule = ColorModule;
+})(Modules || (Modules = {}));
+/// <reference path="../../Core/Image/RsImage.ts"/>
+/// <reference path="../../Core/Image/ImageResizer.ts"/>
+/// <reference path="../../Core/Action/EditorAction.ts"/>
+var Modules;
+(function (Modules) {
+    var VibranceAction = (function () {
+        function VibranceAction(image, value) {
+            this.image = image;
+            this.value = value;
+        }
+        VibranceAction.prototype.execute = function () {
+            this.oldValue = this.image.vibrance;
+            this.image.vibrance = this.value;
+            return this.image.save();
+        };
+        VibranceAction.prototype.unExecute = function () {
+            this.image.vibrance = this.oldValue;
+            return this.image.save();
+        };
+        return VibranceAction;
+    })();
+    Modules.VibranceAction = VibranceAction;
 })(Modules || (Modules = {}));
 /// <reference path="../../Core/Image/RsImage.ts"/>
 /// <reference path="../../Core/Action/EditorAction.ts"/>
@@ -1446,16 +1587,14 @@ var Modules;
         };
         CropModule.prototype.init = function ($el) {
             var _this = this;
-            if (this.editor.UI().getType() == 0 /* SINGLE */) {
-                this.view = this.editor.UI().getView();
-                this.$cropRect = $('<div class="crop-rect"></div>');
-                this.view.getAreaElement().append(this.$cropRect);
-                this.cropResizableWidget = new UI.Widgets.RsResizable(this.$cropRect, this.view.getAreaElement());
-                $('#crop_ok').click(function () {
-                    var b = _this.cropResizableWidget.getBounds();
-                    _this.doAction(b.left, b.top, b.width, b.height);
-                });
-            }
+            this.view = this.editor.UI().getView();
+            this.$cropRect = $('<div class="crop-rect"></div>');
+            this.view.getAreaElement().append(this.$cropRect);
+            this.cropResizableWidget = new UI.Widgets.RsResizable(this.$cropRect, this.view.getAreaElement());
+            $('#crop_ok').click(function () {
+                var b = _this.cropResizableWidget.getBounds();
+                _this.doAction(b.left, b.top, b.width, b.height);
+            });
         };
         CropModule.prototype.icon = function () {
             return 'fa fa-crop';
@@ -1477,7 +1616,7 @@ var Modules;
                 promiseArray.push(img.getActionDispatcher().process(act));
             });
             Promise.all(promiseArray).then(function () {
-                _this.editor.UI().getPage().getView().render();
+                _this.editor.UI().render();
             });
         };
         return CropModule;
@@ -1517,18 +1656,76 @@ var Modules;
     var ResizeModule = (function () {
         function ResizeModule(editor) {
             this.editor = editor;
+            this.isLocked = true;
+            this.image = null;
         }
         ResizeModule.prototype.html = function () {
-            return nunjucks.render('resize.dialog.html.njs', {});
+            return nunjucks.render('resize-single.dialog.html.njs', {
+                isLocked: this.isLocked
+            });
         };
         ResizeModule.prototype.deinit = function () {
+            this.editor.UI().clearPopover();
         };
         ResizeModule.prototype.init = function ($el) {
             var _this = this;
-            $el.find('.m_resize-ok').click(function () {
-                _this.doAction($el.find('.m_resize-width').val(), $el.find('.m_resize-height').val());
-                return false;
+            this.image = this.editor.UI().selected()[0];
+            this.$widthInput = $el.find('.m__single-resize__val.width input');
+            this.$heightInput = $el.find('.m__single-resize__val.height input');
+            this.$lock = $el.find('.m__single-resize__lock');
+            this.$widthInput.val(this.image.width.toString());
+            this.$heightInput.val(this.image.height.toString());
+            var render = _.debounce(function () {
+                _this.doAction(_this.$widthInput.val(), _this.$heightInput.val());
+            }, 500);
+            this.$lock.click(function () {
+                if (_this.isLocked) {
+                    _this.isLocked = false;
+                    _this.$lock.find('i').attr('class', 'fa fa-unlock');
+                }
+                else {
+                    _this.isLocked = true;
+                    _this.update(_this.image);
+                    render();
+                    _this.$lock.find('i').attr('class', 'fa fa-lock');
+                }
             });
+            this.$widthInput.on('input', function () {
+                var val = parseInt(_this.$widthInput.val());
+                if (!isNaN(val) && (val >= 50)) {
+                    if (_this.isLocked) {
+                        _this.$heightInput.val(Math.round(_this.image.getOriginalImage().height * val / _this.image.getOriginalImage().width) + '');
+                    }
+                    var h = parseInt(_this.$heightInput.val());
+                    if (!isNaN(h) && (h >= 30)) {
+                        render();
+                    }
+                }
+            });
+            this.$heightInput.on('input', function () {
+                var val = parseInt(_this.$heightInput.val());
+                if (!isNaN(val) && (val >= 30)) {
+                    if (_this.isLocked) {
+                        _this.$widthInput.val(Math.round(_this.image.getOriginalImage().width * val / _this.image.getOriginalImage().height) + '');
+                    }
+                    var w = parseInt(_this.$widthInput.val());
+                    if (!isNaN(w) && (w >= 50)) {
+                        render();
+                    }
+                }
+            });
+        };
+        ResizeModule.prototype.update = function (image) {
+            var w = parseInt(this.$widthInput.val());
+            var h = parseInt(this.$heightInput.val());
+            if (!isNaN(w) && !isNaN(h) && (w >= 50) && (h >= 30)) {
+                if (w > h) {
+                    this.$heightInput.val(Math.round(image.getOriginalImage().height * w / image.getOriginalImage().width) + '');
+                }
+                else {
+                    this.$widthInput.val(Math.round(image.getOriginalImage().width * h / image.getOriginalImage().height) + '');
+                }
+            }
         };
         ResizeModule.prototype.icon = function () {
             return 'fa fa-expand';
@@ -1544,13 +1741,9 @@ var Modules;
         };
         ResizeModule.prototype.doAction = function (width, height) {
             var _this = this;
-            var promiseArray = [];
-            this.editor.UI().selected().forEach(function (img) {
-                var act = new Modules.ResizeAction(img, width, height);
-                promiseArray.push(img.getActionDispatcher().process(act));
-            });
-            Promise.all(promiseArray).then(function () {
-                _this.editor.UI().getPage().getView().render();
+            var act = new Modules.ResizeAction(this.image, width, height);
+            this.image.getActionDispatcher().process(act).then(function () {
+                _this.editor.UI().render();
             });
         };
         return ResizeModule;

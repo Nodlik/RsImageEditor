@@ -18,7 +18,20 @@ module Core {
 
         public width: number;
         public height: number;
-        public brightness: number;
+
+        public brightness: number = 0;
+        public vibrance: number = 0;
+        public hue: number = 0;
+        public gamma: number = 0;
+        public clip: number = 0;
+        public stackBlur: number = 0;
+        public contrast: number = 0;
+        public saturation: number = 0;
+        public exposure: number = 0;
+        public sepia: number = 0;
+        public noise: number = 0;
+        public sharpen: number = 0;
+
 
         constructor(private imageName: string, private imageType: string) {
             this.actionDispatcher = new ActionDispatcher(<RsImage>this);
@@ -40,6 +53,7 @@ module Core {
                         context.drawImage(img, 0, 0);
 
                         this.originalImage = context.getImageData(0, 0, img.width, img.height);
+                        this.imageBase64 = canvas.toDataURL(this.imageType, 0.8);
                         this.init();
 
                         resolve(this);
@@ -117,6 +131,7 @@ module Core {
                                 var caman = <CamanObject>this;
 
                                 caman.brightness(self.brightness);
+                                caman.vibrance(self.vibrance);
 
                                 caman.render(() => {
                                     resolve(context.getImageData(0, 0, imageData.width, imageData.height));
@@ -135,11 +150,15 @@ module Core {
                     canvas.height = this.processedImage.height;
 
                     context.putImageData(this.processedImage, 0, 0);
-                    this.imageBase64 = canvas.toDataURL();
+                    this.imageBase64 = canvas.toDataURL(this.imageType, 0.8);
 
                     return this;
                 }
             );
+        }
+
+        getSize(): number {
+            return Math.round( atob(this.getImageBase64().substr(this.getImageBase64().indexOf(';base64') + 8)).length / (1000))
         }
 
 
@@ -161,6 +180,10 @@ module Core {
 
         getLabel(): string {
             return '';
+        }
+
+        getType(): string {
+            return this.imageType;
         }
 
         getImageBase64(): string {

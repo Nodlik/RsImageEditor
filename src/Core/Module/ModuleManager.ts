@@ -12,9 +12,9 @@ module Core {
 
         constructor(private editor: RsImageEditor)
         {
-            this.registerModule('resize', new Modules.ResizeModule(this.editor), ModuleViewType.ANY);
+            this.registerModule('resize', new Modules.ResizeModule(this.editor), ModuleViewType.SINGLE);
             this.registerModule('color', new Modules.ColorModule(this.editor), ModuleViewType.ANY);
-            this.registerModule('crop', new Modules.CropModule(this.editor), ModuleViewType.ANY);
+            this.registerModule('crop', new Modules.CropModule(this.editor), ModuleViewType.SINGLE);
         }
 
         registerModule(name: string, editorModule: EditorModule, type: ModuleViewType) {
@@ -35,16 +35,19 @@ module Core {
         }
 
         getModules(type: ModuleViewType = ModuleViewType.ANY, parent: EditorModule = null): EditorModule[] {
-            return _.map(this.modules,
+            return _.map(_.filter(this.modules,
                 (value) => {
                     if ((value.type == type) || (type == ModuleViewType.ANY) || (value.type == ModuleViewType.ANY)) {
-
                         if (value.module.parent() == parent) {
-                            return value.module;
+                            return true;
                         }
                     }
+
+                    return false;
                 }
-            );
+            ), (value) => {
+                return value.module;
+            });
         }
     }
 }

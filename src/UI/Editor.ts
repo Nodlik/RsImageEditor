@@ -10,6 +10,7 @@ module UI {
         private $imagePlace: JQuery;
         private $toolbarPlace: JQuery;
         private $popOver: JQuery;
+        private $informationPlace: JQuery;
 
         private activeModule: Core.EditorModule = null;
 
@@ -49,6 +50,7 @@ module UI {
             this.$toolbarPlace = this.$el.find('#rsToolbarPlace');
             this.$popOver = this.$el.find('#rsPopover');
             this.$imagePlace = this.$el.find('#rsImagePlace');
+            this.$informationPlace = this.$el.find('#rsInformation');
         }
 
 
@@ -66,6 +68,10 @@ module UI {
 
 
         initToolbar($toolbar: JQuery) {
+            if (this.activeModule != null) {
+                $toolbar.find('#t-button__' + this.activeModule.name()).addClass('active');
+            }
+
             $toolbar.find('#t-button__redo').click(() => {
                 this.redo();
 
@@ -90,7 +96,7 @@ module UI {
             });
 
             Promise.all(p).then(() => {
-                this.getPage().getView().render();
+                this.render();
             });
         }
 
@@ -101,7 +107,7 @@ module UI {
             });
 
             Promise.all(p).then(() => {
-                this.getPage().getView().render();
+                this.render();
             });
         }
 
@@ -110,6 +116,11 @@ module UI {
             this.$popOver.show();
 
             return this.$popOver;
+        }
+
+        clearPopover() {
+            this.$popOver.html("");
+            this.$popOver.hide();
         }
 
         back() {
@@ -126,6 +137,10 @@ module UI {
 
         getToolbarPlace(): JQuery {
             return this.$toolbarPlace;
+        }
+
+        getInformationPlace(): JQuery {
+            return this.$informationPlace;
         }
 
         /**
@@ -153,7 +168,15 @@ module UI {
         }
 
         render() {
+            if (this.activeModule != null) {
+                this.activeModule.deinit();
+            }
+
             this.getPage().render();
+
+            if (this.activeModule != null) {
+                ModuleInitialization.renderModule(this.activeModule, this.editor);
+            }
         }
 
 

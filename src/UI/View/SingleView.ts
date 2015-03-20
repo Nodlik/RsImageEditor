@@ -27,6 +27,14 @@ module UI {
             return this.page.getImagePlace().find('#rsSingleImage');
         }
 
+        getInformation(): string {
+            return nunjucks.render('single.information.html.njs', {
+                resolution: this.image.width + 'x' + this.image.height,
+                size: this.image.getSize() + ' kb',
+                type: this.image.getType()
+            });
+        }
+
         private renderImage() {
             this.context.putImageData(this.image.getImageData(), 0, 0);
         }

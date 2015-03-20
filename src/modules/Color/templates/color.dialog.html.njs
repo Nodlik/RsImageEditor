@@ -1,5 +1,11 @@
 <div>
-    <input class="m_color-brightness" type="text" placeholder="width" value="100" /> <br />
-
-    <button class="m_color-ok" value="ok">OK!</button>
+    <h2>Color</h2>
+</div>
+<div class="m__color-item">
+    Brightness
+    <div id="brightnessSlider"></div>
+</div>
+<div class="m__color-item">
+    Vibrance
+    <div id="vibranceSlider"></div>
 </div>

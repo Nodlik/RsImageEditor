@@ -3,7 +3,7 @@ var lineno = null;
 var colno = null;
 var output = "";
 try {
-output += "<div>\n    <input class=\"m_color-brightness\" type=\"text\" placeholder=\"width\" value=\"100\" /> <br />\n\n    <button class=\"m_color-ok\" value=\"ok\">OK!</button>\n</div>";
+output += "<div>\n    <h2>Color</h2>\n</div>\n<div class=\"m__color-item\">\n    Brightness\n    <div id=\"brightnessSlider\"></div>\n</div>\n<div class=\"m__color-item\">\n    Vibrance\n    <div id=\"vibranceSlider\"></div>\n</div>";
 cb(null, output);
 ;
 } catch (e) {
@@ -32,7 +32,7 @@ root: root
 };
 })();
 })();
-(function() {(window.nunjucksPrecompiled = window.nunjucksPrecompiled || {})["resize.dialog.html.njs"] = (function() {function root(env, context, frame, runtime, cb) {
+(function() {(window.nunjucksPrecompiled = window.nunjucksPrecompiled || {})["resize-grid.dialog.html.njs"] = (function() {function root(env, context, frame, runtime, cb) {
 var lineno = null;
 var colno = null;
 var output = "";
@@ -49,12 +49,38 @@ root: root
 };
 })();
 })();
+(function() {(window.nunjucksPrecompiled = window.nunjucksPrecompiled || {})["resize-single.dialog.html.njs"] = (function() {function root(env, context, frame, runtime, cb) {
+var lineno = null;
+var colno = null;
+var output = "";
+try {
+output += "<div>\n    <h2>Size</h2>\n</div>\n\n<div class=\"m__single-resize\">\n    <div class=\"m__single-resize__val width\">\n        Width <br />\n        <input type=\"number\" /> px\n    </div>\n\n    <div class=\"m__single-resize__lock\">\n        <i class=\"\n        ";
+if(runtime.contextOrFrameLookup(context, frame, "isLocked")) {
+output += "\n        fa fa-lock\n        ";
+;
+}
+else {
+output += "\n        fa fa-unlock\n        ";
+;
+}
+output += "\"></i>\n    </div>\n\n    <div class=\"m__single-resize__val height\">\n        Height <br />\n        <input type=\"number\" /> px\n    </div>\n</div>";
+cb(null, output);
+;
+} catch (e) {
+  cb(runtime.handleError(e, lineno, colno));
+}
+}
+return {
+root: root
+};
+})();
+})();
 (function() {(window.nunjucksPrecompiled = window.nunjucksPrecompiled || {})["editor.html.njs"] = (function() {function root(env, context, frame, runtime, cb) {
 var lineno = null;
 var colno = null;
 var output = "";
 try {
-output += "<div class=\"rs-editor-block\">\n    <input type=\"file\" id=\"rsFileInput\" style=\"display: none\" multiple />\n    <div id=\"rsToolbarPlace\" class=\"rs-toolbar\"></div>\n    <div class=\"rs-content\">\n        <div id=\"rsImagePlace\" class=\"rs-image-place\"></div>\n        <div id=\"rsPopover\" class=\"rs-popover hide\"></div>\n    </div>\n</div>";
+output += "<div class=\"rs-editor-block\">\n    <input type=\"file\" id=\"rsFileInput\" style=\"display: none\" multiple />\n    <div id=\"rsToolbarPlace\" class=\"rs-toolbar\"></div>\n    <div class=\"rs-content\">\n        <div id=\"rsImagePlace\" class=\"rs-image-place\"></div>\n        <div class=\"rs-popover\">\n            <div id=\"rsPopover\"></div>\n            <div id=\"rsInformation\" class=\"rs-information\">\n\n            </div>\n        </div>\n    </div>\n</div>";
 cb(null, output);
 ;
 } catch (e) {
@@ -91,12 +117,58 @@ root: root
 };
 })();
 })();
+(function() {(window.nunjucksPrecompiled = window.nunjucksPrecompiled || {})["grid.information.html.njs"] = (function() {function root(env, context, frame, runtime, cb) {
+var lineno = null;
+var colno = null;
+var output = "";
+try {
+output += "<h2 class=\"rs-information__title\">\n    Information\n</h2>\n<div class=\"rs-information__total\">\n    <div>\n        Pictures <br />\n        <b>";
+output += runtime.suppressValue(runtime.contextOrFrameLookup(context, frame, "count"), env.autoesc);
+output += "</b>\n    </div>\n    <div>\n        Min resolution <br />\n        <b>";
+output += runtime.suppressValue(runtime.contextOrFrameLookup(context, frame, "minResolution"), env.autoesc);
+output += "</b>\n    </div>\n\n    <div>\n        Max resolution<br />\n        <b>";
+output += runtime.suppressValue(runtime.contextOrFrameLookup(context, frame, "maxResolution"), env.autoesc);
+output += "</b>\n    </div>\n</div>\n<div class=\"rs-information__resolution\">\n</div>";
+cb(null, output);
+;
+} catch (e) {
+  cb(runtime.handleError(e, lineno, colno));
+}
+}
+return {
+root: root
+};
+})();
+})();
 (function() {(window.nunjucksPrecompiled = window.nunjucksPrecompiled || {})["single.image.html.njs"] = (function() {function root(env, context, frame, runtime, cb) {
 var lineno = null;
 var colno = null;
 var output = "";
 try {
 output += "<div class=\"rs-single-image\">\n    <div class=\"rs-canvas-place\" id=\"rsSingleImage\">\n    </div>\n</div>";
+cb(null, output);
+;
+} catch (e) {
+  cb(runtime.handleError(e, lineno, colno));
+}
+}
+return {
+root: root
+};
+})();
+})();
+(function() {(window.nunjucksPrecompiled = window.nunjucksPrecompiled || {})["single.information.html.njs"] = (function() {function root(env, context, frame, runtime, cb) {
+var lineno = null;
+var colno = null;
+var output = "";
+try {
+output += "<h2 class=\"rs-information__title\">\n    Information\n</h2>\n<div class=\"rs-information__total\">\n    <div>\n        Resolution <br />\n        <b>";
+output += runtime.suppressValue(runtime.contextOrFrameLookup(context, frame, "resolution"), env.autoesc);
+output += "</b>\n    </div>\n    <div>\n        Size <br />\n        <b>";
+output += runtime.suppressValue(runtime.contextOrFrameLookup(context, frame, "size"), env.autoesc);
+output += "</b>\n    </div>\n    <div>\n        Type <br />\n        <b>";
+output += runtime.suppressValue(runtime.contextOrFrameLookup(context, frame, "type"), env.autoesc);
+output += "</b>\n    </div>\n</div>";
 cb(null, output);
 ;
 } catch (e) {

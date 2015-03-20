@@ -9,6 +9,7 @@
 @import "block/popover";
 @import "block/image-place";
 @import "block/single-image";
+@import "block/information";
 
 @import "widgets/slider";
 @import "widgets/resizable";
@@ -21,7 +22,7 @@
   max-width: @max-width;
 
   border: solid 1px @backgroundSecondColor;
-  padding: 5px 0;
+  padding: 5px 0 0 0;
 
   margin: 0 auto;
   box-shadow: 0 0 5px 0 rgba(0, 0, 0, 0.4);
@@ -39,4 +40,11 @@
 
 .rs-helpers-block {
   display: none;
+}
+
+input[type="text"], input[type="number"] {
+  border: solid 1px @backgroundSecondColor;
+  font-size: 90%;
+  padding: 2px;
+  border-radius: 2px;
 }

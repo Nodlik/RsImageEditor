@@ -24,6 +24,22 @@ module UI {
             }
         }
 
+
+        getInformation(): string {
+            if (this.imageCollection.count() > 0) {
+                var r = this.imageCollection.getResolutionStats();
+
+                return nunjucks.render('grid.information.html.njs', {
+                    count: this.imageCollection.count(),
+                    minResolution: r.min.width + 'x' + r.min.height,
+                    maxResolution: r.max.width + 'x' + r.max.height
+                });
+            }
+
+            return '';
+        }
+
+
         selected(): Core.RsImage[] {
             var ids: string[] = [];
             this.page.getImagePlace().find('.rs-image-selected').each((i: number, $el: Element) => {

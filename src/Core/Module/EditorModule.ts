@@ -7,5 +7,6 @@ module Core {
         type(): Core.ModuleType;
         parent(): EditorModule;
         deinit(): void;
+        init($el: JQuery);
     }
 }

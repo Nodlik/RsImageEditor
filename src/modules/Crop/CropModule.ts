@@ -23,22 +23,20 @@ module Modules {
         }
 
         init($el: JQuery) {
-            if (this.editor.UI().getType() == Core.ModuleViewType.SINGLE) {
-                this.view = <UI.SingleView>this.editor.UI().getView();
+            this.view = <UI.SingleView>this.editor.UI().getView();
 
-                this.$cropRect = $('<div class="crop-rect"></div>');
-                this.view.getAreaElement().append(this.$cropRect);
+            this.$cropRect = $('<div class="crop-rect"></div>');
+            this.view.getAreaElement().append(this.$cropRect);
 
-                this.cropResizableWidget = new UI.Widgets.RsResizable(this.$cropRect, this.view.getAreaElement());
+            this.cropResizableWidget = new UI.Widgets.RsResizable(this.$cropRect, this.view.getAreaElement());
 
-                $('#crop_ok').click(() => {
-                    var b = this.cropResizableWidget.getBounds();
+            $('#crop_ok').click(() => {
+                var b = this.cropResizableWidget.getBounds();
 
-                    this.doAction(
-                        b.left, b.top, b.width, b.height
-                    );
-                });
-            }
+                this.doAction(
+                    b.left, b.top, b.width, b.height
+                );
+            });
         }
 
         icon() {
@@ -68,7 +66,7 @@ module Modules {
             );
 
             Promise.all(promiseArray).then(() => {
-                this.editor.UI().getPage().getView().render();
+                this.editor.UI().render();
             });
         }
     }

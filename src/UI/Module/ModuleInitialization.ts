@@ -21,19 +21,26 @@ module UI {
         static initDelegate($button: JQuery, editorModule: Core.EditorModule, editor: Core.RsImageEditor) {
             $button.click(() =>
                 {
-                    if (editor.UI().getActiveModule() != null) {
-                        editor.UI().getActiveModule().deinit();
-                    }
+                    $('.rs-toolbar-button').removeClass('active');
 
-                    (<Core.HtmlModule> editorModule).init(
-                        editor.UI().showPopover((<Core.HtmlModule> editorModule).html())
-                    );
-
-                    editor.UI().setActiveModule(editorModule);
-
-                    return false;
+                    $button.addClass('active');
+                    this.renderModule(editorModule, editor);
                 }
             );
+        }
+
+        static renderModule(editorModule: Core.EditorModule, editor: Core.RsImageEditor) {
+            if (editor.UI().getActiveModule() != null) {
+                editor.UI().getActiveModule().deinit();
+            }
+
+            (<Core.HtmlModule> editorModule).init(
+                editor.UI().showPopover((<Core.HtmlModule> editorModule).html())
+            );
+
+            editor.UI().setActiveModule(editorModule);
+
+            return false;
         }
     }
 }

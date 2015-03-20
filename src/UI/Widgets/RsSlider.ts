@@ -35,9 +35,18 @@ module UI.Widgets {
                 });
 
                 $body.on('mouseup.RsSlider', () => {
+                    var newPos = parseInt(this.$slider.css('left'));
+                    this.trigger('stopmove', this.getVal(newPos));
+
                     $body.off('.RsSlider');
                 });
             });
+
+            this.on('move', (e) => {
+                this.$slider.text(e.data);
+            });
+
+            this.trigger('move', this.start);
         }
 
         private getVal(pixelPos: number): number {
