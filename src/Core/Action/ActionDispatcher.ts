@@ -19,10 +19,11 @@ module Core {
         }
 
         process(action: EditorAction): Promise<any> {
-            this.actions = this.actions.splice(this.current);
+            this.actions.splice(this.current + 1);
             this.actions.push(action);
             this.current++;
 
+            this.actionsResult.splice(this.current);
             this.actionsResult.push(this.doAction(action.execute, action));
 
             return _.last(this.actionsResult);
