@@ -549,24 +549,33 @@ var UI;
             return this.imageCollection.findImage(ids);
         };
         GridView.prototype.renderImage = function (image) {
-            var $block = $(nunjucks.render('grid.image.html.njs', {
-                image: {
-                    //src: image.getImageBase64(),
-                    name: image.getName(),
-                    id: image.getId(),
-                    label: image.getLabel()
-                }
-            }));
-            this.page.getImagePlace().append($block);
-            var $canvas = $('<canvas id="' + image.getId() + '"></canvas>');
-            $block.find('.rs-image-block').append($canvas);
-            var c = $canvas[0];
-            var ctx = c.getContext('2d');
-            c.width = 150;
-            c.height = 120;
-            // todo keep ratio
-            new Core.ImageResizer(image.getImageData(), 150, 120).resize().then(function (imageData) {
-                ctx.putImageData(imageData, 0, 0);
+            var _this = this;
+            image.getImage().then(function (img) {
+                var $block = $(nunjucks.render('grid.image.html.njs', {
+                    image: {
+                        src: img,
+                        name: image.getName(),
+                        id: image.getId(),
+                        label: image.getLabel()
+                    }
+                }));
+                $block.find('.rs-image-block')[0].appendChild(img);
+                _this.page.getImagePlace().append($block);
+                /*
+                var $canvas = $('<canvas id="' + image.getId() + '"></canvas>');
+                $block.find('.rs-image-block').append($canvas);
+                var c = <HTMLCanvasElement>$canvas[0];
+                var ctx = c.getContext('2d');
+
+                c.width = 150;
+                c.height = 120;
+
+                // todo keep ratio
+                new Core.ImageResizer(image.getImageData(), 150, 120).resize().then(
+                    (imageData) => {
+                        ctx.putImageData(imageData, 0, 0);
+                    }
+                );*/
             });
         };
         return GridView;
@@ -794,11 +803,103 @@ var UI;
     })();
     UI.ModuleInitialization = ModuleInitialization;
 })(UI || (UI = {}));
+var UI;
+(function (UI) {
+    var Widgets;
+    (function (Widgets) {
+        var RsWidget = (function () {
+            function RsWidget() {
+                this.events = {};
+            }
+            RsWidget.prototype.on = function (eventName, callback, eventNamespace) {
+                if (eventNamespace === void 0) { eventNamespace = '_'; }
+                if (!_.has(this.events, eventName)) {
+                    this.events[eventName] = {};
+                }
+                if (!_.has(this.events[eventName], eventNamespace)) {
+                    this.events[eventName][eventNamespace] = [];
+                }
+                this.events[eventName][eventNamespace].push(callback);
+            };
+            RsWidget.prototype.off = function (eventNamespace) {
+                var _this = this;
+                if (eventNamespace === void 0) { eventNamespace = '_'; }
+                _.map(this.events, function (event, eventName) {
+                    _this.events[eventName] = _.omit(event, eventNamespace);
+                });
+            };
+            RsWidget.prototype.trigger = function (eventName, data) {
+                var _this = this;
+                if (data === void 0) { data = null; }
+                if (_.has(this.events, eventName)) {
+                    _.map(this.events[eventName], function (callbacks, eventNamespace) {
+                        callbacks.forEach(function (f) {
+                            f({
+                                data: data,
+                                widget: _this
+                            });
+                        });
+                    });
+                }
+            };
+            return RsWidget;
+        })();
+        Widgets.RsWidget = RsWidget;
+    })(Widgets = UI.Widgets || (UI.Widgets = {}));
+})(UI || (UI = {}));
+/// <reference path="RsWidget.ts"/>
+var UI;
+(function (UI) {
+    var Widgets;
+    (function (Widgets) {
+        var RsProgressBar = (function (_super) {
+            __extends(RsProgressBar, _super);
+            function RsProgressBar($el) {
+                _super.call(this);
+                this.$el = $el;
+                this.$label = $('<div class="rs-progress-label"></div>');
+                this.$line = $('<div class="rs-progress-line"></div>');
+                this.$el.html("");
+                this.$el.append(this.$label);
+                this.$el.append(this.$line);
+            }
+            RsProgressBar.prototype.getOpCount = function () {
+                return this.opCount;
+            };
+            RsProgressBar.prototype.start = function (label, opCount) {
+                this.opCount = opCount;
+                this.setProgress(0, label);
+                this.trigger('start');
+                this.$el.show();
+            };
+            RsProgressBar.prototype.setProgress = function (op, label) {
+                this.$label.text(label);
+                this.$line.css('width', ((op / this.opCount) * 100) + '%');
+                if (op >= this.opCount) {
+                    this.trigger('stop');
+                }
+                else {
+                    this.trigger('progress', op);
+                }
+            };
+            RsProgressBar.prototype.stop = function (label) {
+                var _this = this;
+                this.$label.text(label);
+                setTimeout(function () {
+                    _this.$el.hide();
+                }, 200);
+            };
+            return RsProgressBar;
+        })(Widgets.RsWidget);
+        Widgets.RsProgressBar = RsProgressBar;
+    })(Widgets = UI.Widgets || (UI.Widgets = {}));
+})(UI || (UI = {}));
 /// <reference path="../Core/RsImageEditor.ts"/>
 /// <reference path="../Core/Image/ImageCollection.ts"/>
 /// <reference path="../Core/Image/RsImage.ts"/>
 /// <reference path="Page.ts"/>
 /// <reference path="Module/ModuleInitialization.ts"/>
+/// <reference path="Widgets/RsProgressBar.ts"/>
 var UI;
 (function (UI) {
     var Editor = (function () {
@@ -833,7 +934,17 @@ var UI;
             this.$popOver = this.$el.find('#rsPopover');
             this.$imagePlace = this.$el.find('#rsImagePlace');
             this.$informationPlace = this.$el.find('#rsInformation');
+            this.progressBar = new UI.Widgets.RsProgressBar(this.$el.find('#rsProgressBar'));
+            this.progressBar.on('stop', function (e) {
+                _this.progressBar.stop('Loading complete!');
+            });
         }
+        Editor.prototype.showLoader = function (opCount) {
+            this.progressBar.start('Loading image...', opCount);
+        };
+        Editor.prototype.progressLoader = function (op) {
+            this.progressBar.setProgress(op, 'Image ' + op + ' from ' + this.progressBar.getOpCount());
+        };
         Editor.prototype.initModule = function ($button, editorModule) {
             UI.ModuleInitialization.init($button, editorModule, this.editor);
         };
@@ -930,7 +1041,9 @@ var UI;
             }
             this.getPage().render();
             if (this.activeModule != null) {
-                UI.ModuleInitialization.renderModule(this.activeModule, this.editor);
+                if ((this.activeModule.viewType() == this.getType()) || (this.activeModule.viewType() == 2 /* ANY */)) {
+                    UI.ModuleInitialization.renderModule(this.activeModule, this.editor);
+                }
             }
         };
         Editor.prototype.appendImage = function (image) {
@@ -1017,10 +1130,14 @@ var Core;
     var ImageLoader = (function () {
         function ImageLoader(editor) {
             this.editor = editor;
+            this.total = 0;
+            this.total = 0;
         }
         ImageLoader.prototype.load = function (files) {
             var _this = this;
             var i = 0;
+            this.total = 0;
+            this.editor.UI().showLoader(files.length);
             var p = new Promise(function (resolve, reject) {
                 var intervalId = setInterval(function () {
                     if (i < files.length) {
@@ -1050,6 +1167,8 @@ var Core;
                 var img = new Core.RsImage(file.name, file.type);
                 img.create(e.target.result).then(function (image) {
                     _this.editor.appendImage(image);
+                    _this.total++;
+                    _this.editor.UI().progressLoader(_this.total);
                     if (isLast) {
                         resolve(1);
                     }
@@ -1094,50 +1213,6 @@ var Core;
     })();
     Core.RsImageEditor = RsImageEditor;
 })(Core || (Core = {}));
-var UI;
-(function (UI) {
-    var Widgets;
-    (function (Widgets) {
-        var RsWidget = (function () {
-            function RsWidget() {
-                this.events = {};
-            }
-            RsWidget.prototype.on = function (eventName, callback, eventNamespace) {
-                if (eventNamespace === void 0) { eventNamespace = '_'; }
-                if (!_.has(this.events, eventName)) {
-                    this.events[eventName] = {};
-                }
-                if (!_.has(this.events[eventName], eventNamespace)) {
-                    this.events[eventName][eventNamespace] = [];
-                }
-                this.events[eventName][eventNamespace].push(callback);
-            };
-            RsWidget.prototype.off = function (eventNamespace) {
-                var _this = this;
-                if (eventNamespace === void 0) { eventNamespace = '_'; }
-                _.map(this.events, function (event, eventName) {
-                    _this.events[eventName] = _.omit(event, eventNamespace);
-                });
-            };
-            RsWidget.prototype.trigger = function (eventName, data) {
-                var _this = this;
-                if (data === void 0) { data = null; }
-                if (_.has(this.events, eventName)) {
-                    _.map(this.events[eventName], function (callbacks, eventNamespace) {
-                        callbacks.forEach(function (f) {
-                            f({
-                                data: data,
-                                widget: _this
-                            });
-                        });
-                    });
-                }
-            };
-            return RsWidget;
-        })();
-        Widgets.RsWidget = RsWidget;
-    })(Widgets = UI.Widgets || (UI.Widgets = {}));
-})(UI || (UI = {}));
 /// <reference path="RsWidget.ts"/>
 var UI;
 (function (UI) {
@@ -1209,6 +1284,9 @@ var Modules;
         }
         ColorModule.prototype.html = function () {
             return nunjucks.render('color.dialog.html.njs', {});
+        };
+        ColorModule.prototype.viewType = function () {
+            return 2 /* ANY */;
         };
         ColorModule.prototype.init = function ($el) {
             var _this = this;
@@ -1593,10 +1671,14 @@ var Modules;
             return nunjucks.render('crop.dialog.html.njs', {});
         };
         CropModule.prototype.deinit = function () {
+            this.editor.UI().clearPopover();
             if (this.view != null) {
                 this.$cropRect.remove();
                 this.view.getAreaElement().find('.rs-resizable-item').remove();
             }
+        };
+        CropModule.prototype.viewType = function () {
+            return 0 /* SINGLE */;
         };
         CropModule.prototype.init = function ($el) {
             var _this = this;
@@ -1680,6 +1762,9 @@ var Modules;
         };
         ResizeModule.prototype.deinit = function () {
             this.editor.UI().clearPopover();
+        };
+        ResizeModule.prototype.viewType = function () {
+            return 0 /* SINGLE */;
         };
         ResizeModule.prototype.init = function ($el) {
             var _this = this;

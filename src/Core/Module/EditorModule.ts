@@ -8,5 +8,7 @@ module Core {
         parent(): EditorModule;
         deinit(): void;
         init($el: JQuery);
+
+        viewType(): ModuleViewType;
     }
 }

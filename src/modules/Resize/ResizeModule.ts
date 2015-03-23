@@ -25,6 +25,10 @@ module Modules {
             this.editor.UI().clearPopover();
         }
 
+        viewType(): Core.ModuleViewType {
+            return Core.ModuleViewType.SINGLE;
+        }
+
         init($el: JQuery) {
             this.image = this.editor.UI().selected()[0];
 

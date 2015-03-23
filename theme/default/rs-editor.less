@@ -13,6 +13,7 @@
 
 @import "widgets/slider";
 @import "widgets/resizable";
+@import "widgets/progress-bar";
 
 .rs-editor {
   font-family: @mainFont;
@@ -47,4 +48,24 @@ input[type="text"], input[type="number"] {
   font-size: 90%;
   padding: 2px;
   border-radius: 2px;
+}
+
+.rs-progress-bar {
+  position: absolute;
+  z-index: 400;
+  margin-top: 10px;
+  width: 100%;
+  top: 34px;
+
+  .rs-progress-label {
+    top: 5px;
+    color: @lightFontColor;
+    padding: 2px 5px;
+    .background-opacity(@decorationColor, 0.5);
+    position: absolute;
+  }
+
+  .rs-progress-line {
+    top: 0;
+  }
 }

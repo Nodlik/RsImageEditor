@@ -16,10 +16,16 @@ module Modules {
         }
 
         deinit() {
+            this.editor.UI().clearPopover();
+
             if (this.view != null) {
                 this.$cropRect.remove();
                 this.view.getAreaElement().find('.rs-resizable-item').remove();
             }
+        }
+
+        viewType(): Core.ModuleViewType {
+            return Core.ModuleViewType.SINGLE;
         }
 
         init($el: JQuery) {
@@ -35,7 +41,7 @@ module Modules {
 
                 var w = Math.round(b.width / this.view.getScale());
                 this.doAction(
-                     b.left / this.view.getScale(), b.top / this.view.getScale(), w, b.height / this.view.getScale()
+                        b.left / this.view.getScale(), b.top / this.view.getScale(), w, b.height / this.view.getScale()
                 );
             });
         }

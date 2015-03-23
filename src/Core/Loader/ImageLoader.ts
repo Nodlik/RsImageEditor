@@ -3,12 +3,17 @@
 
 module Core {
     export class ImageLoader {
-        constructor(private editor: RsImageEditor) {
+        private total: number = 0;
 
+        constructor(private editor: RsImageEditor) {
+            this.total = 0;
         }
 
         load(files: FileList) {
             var i = 0;
+            this.total = 0;
+
+            this.editor.UI().showLoader(files.length);
 
             var p = new Promise<number>(
                 (resolve, reject) => {
@@ -49,6 +54,10 @@ module Core {
                 var img = new RsImage(file.name, file.type);
                 img.create((<MSBaseReader>e.target).result).then((image) => {
                     this.editor.appendImage(image);
+
+                    this.total++;
+                    this.editor.UI().progressLoader(this.total);
+
 
                     if (isLast) {
                         resolve(1);

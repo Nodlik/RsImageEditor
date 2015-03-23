@@ -11,6 +11,10 @@ module Modules {
             return nunjucks.render('color.dialog.html.njs', {});
         }
 
+        viewType(): Core.ModuleViewType {
+            return Core.ModuleViewType.ANY;
+        }
+
         init($el: JQuery) {
             var brightness = 0;
             var vibrance = 0;

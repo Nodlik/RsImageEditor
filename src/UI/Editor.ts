@@ -3,6 +3,7 @@
 /// <reference path="../Core/Image/RsImage.ts"/>
 /// <reference path="Page.ts"/>
 /// <reference path="Module/ModuleInitialization.ts"/>
+/// <reference path="Widgets/RsProgressBar.ts"/>
 
 module UI {
     export class Editor {
@@ -12,6 +13,8 @@ module UI {
         private $toolbarPlace: JQuery;
         private $popOver: JQuery;
         private $informationPlace: JQuery;
+
+        private progressBar: Widgets.RsProgressBar;
 
         private activeModule: Core.EditorModule = null;
 
@@ -52,6 +55,20 @@ module UI {
             this.$popOver = this.$el.find('#rsPopover');
             this.$imagePlace = this.$el.find('#rsImagePlace');
             this.$informationPlace = this.$el.find('#rsInformation');
+
+            this.progressBar = new UI.Widgets.RsProgressBar(this.$el.find('#rsProgressBar'));
+            this.progressBar.on('stop', (e) => {
+                this.progressBar.stop('Loading complete!');
+            })
+        }
+
+
+        showLoader(opCount: number) {
+            this.progressBar.start('Loading image...', opCount);
+        }
+
+        progressLoader(op: number) {
+            this.progressBar.setProgress(op, 'Image ' + op + ' from ' + this.progressBar.getOpCount());
         }
 
 
@@ -177,7 +194,9 @@ module UI {
             this.getPage().render();
 
             if (this.activeModule != null) {
-                ModuleInitialization.renderModule(this.activeModule, this.editor);
+                if ((this.activeModule.viewType() == this.getType()) || (this.activeModule.viewType() == Core.ModuleViewType.ANY)) {
+                    ModuleInitialization.renderModule(this.activeModule, this.editor);
+                }
             }
         }
 

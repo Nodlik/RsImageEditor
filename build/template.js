@@ -80,7 +80,7 @@ var lineno = null;
 var colno = null;
 var output = "";
 try {
-output += "<div class=\"rs-editor-block\">\n    <input type=\"file\" id=\"rsFileInput\" style=\"display: none\" multiple />\n    <div id=\"rsToolbarPlace\" class=\"rs-toolbar\"></div>\n    <div class=\"rs-content\">\n        <div id=\"rsImagePlace\" class=\"rs-image-place\"></div>\n        <div class=\"rs-popover\">\n            <div id=\"rsPopover\"></div>\n            <div id=\"rsInformation\" class=\"rs-information\">\n\n            </div>\n        </div>\n    </div>\n</div>";
+output += "<div class=\"rs-editor-block\">\n    <input type=\"file\" id=\"rsFileInput\" style=\"display: none\" multiple />\n    <div id=\"rsToolbarPlace\" class=\"rs-toolbar\"></div>\n    <div class=\"rs-progress-bar\" id=\"rsProgressBar\">\n\n    </div>\n    <div class=\"rs-content\">\n        <div id=\"rsImagePlace\" class=\"rs-image-place\"></div>\n        <div class=\"rs-popover\">\n            <div id=\"rsPopover\"></div>\n            <div id=\"rsInformation\" class=\"rs-information\">\n\n            </div>\n        </div>\n    </div>\n</div>";
 cb(null, output);
 ;
 } catch (e) {
@@ -101,7 +101,9 @@ output += "<div class=\"rs-image\" data-id=\"";
 output += runtime.suppressValue(runtime.memberLookup((runtime.contextOrFrameLookup(context, frame, "image")),"id", env.autoesc), env.autoesc);
 output += "\">\n    <div class=\"rs-image-block\">\n        <!--<img src=\"";
 output += runtime.suppressValue(runtime.memberLookup((runtime.contextOrFrameLookup(context, frame, "image")),"src", env.autoesc), env.autoesc);
-output += "\" />-->\n    </div>\n    <div class=\"rs-image-data\">\n        <div class=\"rs-image-data__inf\">\n            <div class=\"rs-image-data__label\">";
+output += "\" />-->\n        <!--";
+output += runtime.suppressValue(runtime.memberLookup((runtime.contextOrFrameLookup(context, frame, "image")),"src", env.autoesc), env.autoesc);
+output += "-->\n    </div>\n    <div class=\"rs-image-data\">\n        <div class=\"rs-image-data__inf\">\n            <div class=\"rs-image-data__label\">";
 output += runtime.suppressValue(runtime.memberLookup((runtime.contextOrFrameLookup(context, frame, "image")),"label", env.autoesc), env.autoesc);
 output += "</div>\n            <div class=\"rs-image-data__name\">";
 output += runtime.suppressValue(runtime.memberLookup((runtime.contextOrFrameLookup(context, frame, "image")),"name", env.autoesc), env.autoesc);
