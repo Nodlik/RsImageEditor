@@ -15,8 +15,10 @@ module UI.Widgets {
             this.$slider.css('left', this.getPixelPos(this.start) + 'px');
 
             var $body: JQuery = $(document);
+
             this.$slider.mousedown((downEvent: JQueryMouseEventObject) => {
                 var x = downEvent.clientX - parseInt(this.$slider.css('left'));
+                $body.off('.RsSlider');
 
                 $body.on('mousemove.RsSlider', (moveEvent: JQueryMouseEventObject) => {
                     var pos = moveEvent.clientX - x;

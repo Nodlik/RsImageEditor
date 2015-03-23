@@ -15,6 +15,7 @@ module Core {
         private processedImage: ImageData;
 
         private imageBase64: string = ''; // BASE 64 processed image
+        private image: HTMLImageElement = null;
 
         public width: number;
         public height: number;
@@ -54,6 +55,10 @@ module Core {
 
                         this.originalImage = context.getImageData(0, 0, img.width, img.height);
                         this.imageBase64 = canvas.toDataURL(this.imageType, 0.8);
+
+                        canvas.width = 1;
+                        canvas.height = 1;
+
                         this.init();
 
                         resolve(this);
@@ -103,9 +108,13 @@ module Core {
         public save(): Promise<RsImage> {
             var canvas = document.createElement('canvas');
             var context = canvas.getContext('2d');
+
             canvas.width = this.width;
             canvas.height = this.height;
+
             context.putImageData(this.originalImage, 0, 0);
+
+            this.image = null;
 
             /* RESIZE */
             var resizePromise: Promise<ImageData>;
@@ -144,13 +153,16 @@ module Core {
                 (imageData: ImageData) => {
                     this.processedImage = imageData;
 
-                    var canvas: HTMLCanvasElement = document.createElement('canvas');
-                    var context = canvas.getContext('2d');
                     canvas.width = this.processedImage.width;
                     canvas.height = this.processedImage.height;
 
                     context.putImageData(this.processedImage, 0, 0);
                     this.imageBase64 = canvas.toDataURL(this.imageType, 0.8);
+
+                    canvas.width = 1;
+                    canvas.height = 1;
+
+                    this.getImage();
 
                     return this;
                 }
@@ -203,11 +215,16 @@ module Core {
         }
 
         getImage(): Promise<HTMLImageElement> {
+            if (this.image != null) {
+                return Promise.resolve(this.image);
+            }
+
             return new Promise<HTMLImageElement>(
                 (resolve, reject) => {
                     var img = new Image();
 
                     img.onload = () => {
+                        this.image = img;
                         resolve(img);
                     };
 

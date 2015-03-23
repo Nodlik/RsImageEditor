@@ -8,6 +8,8 @@
 
 module UI {
     export class Page {
+        private view: ViewInterface = null;
+
         constructor(private editor: Editor, private imageCollection: Core.ImageCollection, private parent: Page = null) {
 
         }
@@ -22,14 +24,34 @@ module UI {
 
         appendImage(image: Core.RsImage) {
             this.imageCollection.add(image);
+
+            if (this.imageCollection.count() == 1) {
+                if (this.view.type() == Core.ModuleViewType.GRID) {
+                    this.view = null;
+                    this.view = new SingleView(this, this.imageCollection.getImages()[0]);
+                }
+            }
+            else {
+                if (this.view.type() == Core.ModuleViewType.SINGLE) {
+                    this.view = null;
+                    this.view = new GridView(this, this.imageCollection);
+                }
+            }
         }
 
         getView(): ViewInterface {
-            if (this.imageCollection.getImages().length == 1) {
-                return new SingleView(this, this.imageCollection.getImages()[0]);
+            if (this.view != null) {
+                return this.view;
             }
 
-            return new GridView(this, this.imageCollection);
+            if (this.imageCollection.getImages().length == 1) {
+                this.view = new SingleView(this, this.imageCollection.getImages()[0]);
+            }
+            else {
+                this.view = new GridView(this, this.imageCollection);
+            }
+
+            return this.view;
         }
 
         getToolbar(): Toolbar {

@@ -28,7 +28,7 @@ module Core {
         }
 
         appendImage(image: RsImage) {
-            this.ui.getPage().appendImage(image);
+            this.ui.appendImage(image);
         }
 
         getLoader(): ImageLoader {

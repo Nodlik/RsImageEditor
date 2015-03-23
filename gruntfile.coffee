@@ -102,6 +102,12 @@ module.exports = (grunt) ->
             dest: 'build/lib/'
             flatten: true,
             filter: 'isFile'
+          ,
+            expand: true
+            src: 'packages/js/pica/dist/pica.min.js'
+            dest: 'build/lib/'
+            flatten: true,
+            filter: 'isFile'
         ]
 
     clean:

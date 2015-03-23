@@ -6,6 +6,7 @@
 
 module UI {
     export class Editor {
+        private pages: Page[] = [];
         private page: Page = null;
         private $imagePlace: JQuery;
         private $toolbarPlace: JQuery;
@@ -155,9 +156,10 @@ module UI {
             return this.editor;
         }
 
-        getPage(): Page {
+        getPage(): Page { // ????
             if (this.page == null) {
                 this.page = new Page(this, this.images);
+                this.pages.push(this.page);
             }
 
             return this.page;
@@ -179,6 +181,11 @@ module UI {
             }
         }
 
+        appendImage(image: Core.RsImage) {
+            this.pages.forEach((page) => {
+                page.appendImage(image);
+            });
+        }
 
         /**
          * Go to single image editor
@@ -189,6 +196,7 @@ module UI {
             var image = this.images.getImage(imageId);
 
             this.page = new Page(this, image, this.page);
+            this.pages.push(this.page);
             this.render();
         }
 

@@ -33,8 +33,9 @@ module Modules {
             $('#crop_ok').click(() => {
                 var b = this.cropResizableWidget.getBounds();
 
+                var w = Math.round(b.width / this.view.getScale());
                 this.doAction(
-                    b.left, b.top, b.width, b.height
+                     b.left / this.view.getScale(), b.top / this.view.getScale(), w, b.height / this.view.getScale()
                 );
             });
         }

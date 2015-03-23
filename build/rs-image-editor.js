@@ -63,6 +63,7 @@ var Core;
             this.id = '';
             this.actionDispatcher = null;
             this.imageBase64 = ''; // BASE 64 processed image
+            this.image = null;
             this.brightness = 0;
             this.vibrance = 0;
             this.hue = 0;
@@ -89,6 +90,8 @@ var Core;
                     context.drawImage(img, 0, 0);
                     _this.originalImage = context.getImageData(0, 0, img.width, img.height);
                     _this.imageBase64 = canvas.toDataURL(_this.imageType, 0.8);
+                    canvas.width = 1;
+                    canvas.height = 1;
                     _this.init();
                     resolve(_this);
                 });
@@ -131,6 +134,7 @@ var Core;
             canvas.width = this.width;
             canvas.height = this.height;
             context.putImageData(this.originalImage, 0, 0);
+            this.image = null;
             /* RESIZE */
             var resizePromise;
             if ((this.width != this.originalImage.width) || (this.height != this.originalImage.height)) {
@@ -157,12 +161,13 @@ var Core;
                 });
             }).then(function (imageData) {
                 _this.processedImage = imageData;
-                var canvas = document.createElement('canvas');
-                var context = canvas.getContext('2d');
                 canvas.width = _this.processedImage.width;
                 canvas.height = _this.processedImage.height;
                 context.putImageData(_this.processedImage, 0, 0);
                 _this.imageBase64 = canvas.toDataURL(_this.imageType, 0.8);
+                canvas.width = 1;
+                canvas.height = 1;
+                _this.getImage();
                 return _this;
             });
         };
@@ -201,9 +206,13 @@ var Core;
         };
         RsImage.prototype.getImage = function () {
             var _this = this;
+            if (this.image != null) {
+                return Promise.resolve(this.image);
+            }
             return new Promise(function (resolve, reject) {
                 var img = new Image();
                 img.onload = function () {
+                    _this.image = img;
                     resolve(img);
                 };
                 img.src = _this.imageBase64;
@@ -216,22 +225,6 @@ var Core;
 /// <reference path="../Action/ActionDispatcher.ts"/>
 var Core;
 (function (Core) {
-    var ImagePixel = (function () {
-        function ImagePixel(r, g, b, a) {
-            this.r = r;
-            this.g = g;
-            this.b = b;
-            this.a = a;
-        }
-        ImagePixel.prototype.devig = function (val) {
-            this.r /= val;
-            this.g /= val;
-            this.b /= val;
-            this.a /= val;
-            return this;
-        };
-        return ImagePixel;
-    })();
     var ImageResizer = (function () {
         function ImageResizer(original, newWidth, newHeight) {
             this.original = original;
@@ -240,84 +233,32 @@ var Core;
             this.size = this.original.data.length;
         }
         ImageResizer.prototype.resize = function () {
-            var wSize = this.getWidthGridSize();
-            var hSize = this.getHeightGridSize();
-            if ((wSize > 2) && (hSize > 2)) {
-                return Promise.resolve(this.downScaleSuperSampling(wSize, hSize));
-            }
-            else {
-                return this.upScale();
-            }
+            return this.picaResize();
         };
-        ImageResizer.prototype.upScale = function () {
+        ImageResizer.prototype.picaResize = function (quality) {
             var _this = this;
-            var canvas = document.createElement('canvas');
-            var context = canvas.getContext('2d');
-            canvas.width = this.original.width;
-            canvas.height = this.original.height;
-            context.putImageData(this.original, 0, 0);
-            var img = new Image();
+            if (quality === void 0) { quality = 3; }
             return new Promise(function (resolve, reject) {
-                img.onload = function () {
-                    canvas.width = _this.newWidth;
-                    canvas.height = _this.newHeight;
-                    context.drawImage(img, 0, 0, _this.newWidth, _this.newHeight);
-                    resolve(context.getImageData(0, 0, _this.newWidth, _this.newHeight));
-                };
-                img.src = canvas.toDataURL();
+                pica.resizeBuffer({
+                    src: _this.original.data,
+                    width: _this.original.width,
+                    height: _this.original.height,
+                    toWidth: _this.newWidth,
+                    toHeight: _this.newHeight,
+                    alpha: true,
+                    quality: quality
+                }, function (err, data) {
+                    var canvas = document.createElement('canvas');
+                    var context = canvas.getContext('2d');
+                    var newImageData = context.createImageData(_this.newWidth, _this.newHeight);
+                    for (var i = 0; i < data.length; i++) {
+                        newImageData.data[i] = data[i];
+                    }
+                    canvas.width = 1;
+                    canvas.height = 1;
+                    resolve(newImageData);
+                });
             });
-        };
-        ImageResizer.prototype.downScaleSuperSampling = function (wSize, hSize) {
-            var canvas = document.createElement('canvas');
-            var context = canvas.getContext('2d');
-            var result = context.createImageData(this.newWidth, this.newHeight);
-            var cut = this.cutImageData(wSize, hSize);
-            var c = 0;
-            for (var row = 0; row < this.newHeight; row++) {
-                for (var col = 0; col < this.newWidth; col++) {
-                    var p = cut[row][col];
-                    if (p) {
-                        result.data[c] = p.r;
-                        result.data[c + 1] = p.g;
-                        result.data[c + 2] = p.b;
-                        result.data[c + 3] = p.a;
-                        c += 4;
-                    }
-                }
-            }
-            return result;
-        };
-        ImageResizer.prototype.cutImageData = function (wSize, hSize) {
-            var rowNumber = 0;
-            var data = [];
-            for (var row = 0; row < this.original.height; row = row + hSize) {
-                data[rowNumber] = [];
-                for (var col = 0; col < this.original.width; col = col + wSize) {
-                    var p = new ImagePixel(0, 0, 0, 0);
-                    var c = 0;
-                    for (var i = row; i < row + hSize; i++) {
-                        for (var j = col; j < col + wSize; j++) {
-                            var n = ((i * this.original.width) + j) * 4;
-                            if (n + 3 < this.size) {
-                                p.r = p.r + this.original.data[n];
-                                p.g = p.g + this.original.data[n + 1];
-                                p.b = p.b + this.original.data[n + 2];
-                                p.a = p.a + this.original.data[n + 3];
-                                c++;
-                            }
-                        }
-                    }
-                    data[rowNumber].push(p.devig(c));
-                }
-                rowNumber++;
-            }
-            return data;
-        };
-        ImageResizer.prototype.getWidthGridSize = function () {
-            return Math.floor(this.original.width / this.newWidth);
-        };
-        ImageResizer.prototype.getHeightGridSize = function () {
-            return Math.floor(this.original.height / this.newHeight);
         };
         return ImageResizer;
     })();
@@ -476,19 +417,63 @@ var Core;
 })(Core || (Core = {}));
 var UI;
 (function (UI) {
+    var ZoomType;
+    (function (ZoomType) {
+        ZoomType[ZoomType["WIDTH"] = 0] = "WIDTH";
+        ZoomType[ZoomType["HEIGHT"] = 1] = "HEIGHT";
+        ZoomType[ZoomType["SOURCE"] = 2] = "SOURCE";
+    })(ZoomType || (ZoomType = {}));
     var SingleView = (function () {
         function SingleView(page, image) {
             this.page = page;
             this.image = image;
             this.canvas = null;
+            this.scale = 1;
+            this.scale = 1;
         }
         SingleView.prototype.type = function () {
             return 0 /* SINGLE */;
         };
         SingleView.prototype.render = function () {
+            var _this = this;
             this.page.getImagePlace().html(nunjucks.render('single.image.html.njs', {}));
             this.getCanvas();
             this.renderImage();
+            this.setScale(this.scale);
+            $('#fitToWidth').click(function () {
+                _this.setZoom(0 /* WIDTH */);
+                return false;
+            });
+            $('#sourceSize').click(function () {
+                _this.setZoom(2 /* SOURCE */);
+                return false;
+            });
+        };
+        SingleView.prototype.setZoom = function (zoom) {
+            var $container = this.page.getImagePlace().find('.rs-single-image');
+            var $canvas = $container.find('canvas');
+            var value = 1;
+            if (zoom == 0 /* WIDTH */) {
+                value = ($container.width() / $canvas.width());
+                $container.css('overflow', 'hidden');
+            }
+            else if (zoom == 2 /* SOURCE */) {
+                $container.css('overflow', 'scroll');
+            }
+            this.setScale(value);
+        };
+        SingleView.prototype.setScale = function (scale) {
+            var $container = this.page.getImagePlace().find('.rs-single-image');
+            var $canvas = $container.find('canvas');
+            $container.scrollLeft(0);
+            $container.scrollTop(0);
+            $canvas.css('transform-origin', '0 0');
+            $canvas.css('transform', 'scale(' + scale + ')');
+            this.scale = scale;
+            $("#zoomValue").text(Math.floor(scale * 100) + '%');
+        };
+        SingleView.prototype.getScale = function () {
+            return this.scale;
         };
         SingleView.prototype.selected = function () {
             return [this.image];
@@ -706,6 +691,7 @@ var UI;
             this.editor = editor;
             this.imageCollection = imageCollection;
             this.parent = parent;
+            this.view = null;
         }
         Page.prototype.hasParent = function () {
             return (this.parent != null);
@@ -715,12 +701,30 @@ var UI;
         };
         Page.prototype.appendImage = function (image) {
             this.imageCollection.add(image);
+            if (this.imageCollection.count() == 1) {
+                if (this.view.type() == 1 /* GRID */) {
+                    this.view = null;
+                    this.view = new UI.SingleView(this, this.imageCollection.getImages()[0]);
+                }
+            }
+            else {
+                if (this.view.type() == 0 /* SINGLE */) {
+                    this.view = null;
+                    this.view = new UI.GridView(this, this.imageCollection);
+                }
+            }
         };
         Page.prototype.getView = function () {
-            if (this.imageCollection.getImages().length == 1) {
-                return new UI.SingleView(this, this.imageCollection.getImages()[0]);
+            if (this.view != null) {
+                return this.view;
             }
-            return new UI.GridView(this, this.imageCollection);
+            if (this.imageCollection.getImages().length == 1) {
+                this.view = new UI.SingleView(this, this.imageCollection.getImages()[0]);
+            }
+            else {
+                this.view = new UI.GridView(this, this.imageCollection);
+            }
+            return this.view;
         };
         Page.prototype.getToolbar = function () {
             if (this.imageCollection.getImages().length == 1) {
@@ -803,6 +807,7 @@ var UI;
             this.$el = $el;
             this.editor = editor;
             this.images = images;
+            this.pages = [];
             this.page = null;
             this.activeModule = null;
             this.$el.html(nunjucks.render('editor.html.njs', {}));
@@ -912,6 +917,7 @@ var UI;
         Editor.prototype.getPage = function () {
             if (this.page == null) {
                 this.page = new UI.Page(this, this.images);
+                this.pages.push(this.page);
             }
             return this.page;
         };
@@ -927,6 +933,11 @@ var UI;
                 UI.ModuleInitialization.renderModule(this.activeModule, this.editor);
             }
         };
+        Editor.prototype.appendImage = function (image) {
+            this.pages.forEach(function (page) {
+                page.appendImage(image);
+            });
+        };
         /**
          * Go to single image editor
          *
@@ -935,6 +946,7 @@ var UI;
         Editor.prototype.editImage = function (imageId) {
             var image = this.images.getImage(imageId);
             this.page = new UI.Page(this, image, this.page);
+            this.pages.push(this.page);
             this.render();
         };
         Editor.prototype.selectImage = function ($el) {
@@ -1070,7 +1082,7 @@ var Core;
             return this.moduleManager;
         };
         RsImageEditor.prototype.appendImage = function (image) {
-            this.ui.getPage().appendImage(image);
+            this.ui.appendImage(image);
         };
         RsImageEditor.prototype.getLoader = function () {
             return this.loader;
@@ -1151,6 +1163,7 @@ var UI;
                 var $body = $(document);
                 this.$slider.mousedown(function (downEvent) {
                     var x = downEvent.clientX - parseInt(_this.$slider.css('left'));
+                    $body.off('.RsSlider');
                     $body.on('mousemove.RsSlider', function (moveEvent) {
                         var pos = moveEvent.clientX - x;
                         if (pos < 0) {
@@ -1593,7 +1606,8 @@ var Modules;
             this.cropResizableWidget = new UI.Widgets.RsResizable(this.$cropRect, this.view.getAreaElement());
             $('#crop_ok').click(function () {
                 var b = _this.cropResizableWidget.getBounds();
-                _this.doAction(b.left, b.top, b.width, b.height);
+                var w = Math.round(b.width / _this.view.getScale());
+                _this.doAction(b.left / _this.view.getScale(), b.top / _this.view.getScale(), w, b.height / _this.view.getScale());
             });
         };
         CropModule.prototype.icon = function () {

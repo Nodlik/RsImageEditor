@@ -162,7 +162,7 @@ var lineno = null;
 var colno = null;
 var output = "";
 try {
-output += "<h2 class=\"rs-information__title\">\n    Information\n</h2>\n<div class=\"rs-information__total\">\n    <div>\n        Resolution <br />\n        <b>";
+output += "<h2 class=\"rs-information__title\">\n    Zoom\n</h2>\n<div class=\"rs-information__zoom\">\n    <a href=\"#to-width\" id=\"fitToWidth\">Fit to width</a>\n    <a href=\"#source\" id=\"sourceSize\">Original size</a>\n\n    <div class=\"rs-information__zoom-value\">\n        Actual zoom: <b id=\"zoomValue\">100%</b>\n    </div>\n</div>\n\n<h2 class=\"rs-information__title\">\n    Information\n</h2>\n<div class=\"rs-information__total\">\n    <div>\n        Resolution <br />\n        <b>";
 output += runtime.suppressValue(runtime.contextOrFrameLookup(context, frame, "resolution"), env.autoesc);
 output += "</b>\n    </div>\n    <div>\n        Size <br />\n        <b>";
 output += runtime.suppressValue(runtime.contextOrFrameLookup(context, frame, "size"), env.autoesc);
