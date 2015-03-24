@@ -24,6 +24,10 @@ module UI {
             }
         }
 
+        setImages(images: Core.ImageCollection) {
+            this.imageCollection = images;
+        }
+
 
         getInformation(): string {
             if (this.imageCollection.count() > 0) {
@@ -49,6 +53,27 @@ module UI {
             return this.imageCollection.findImage(ids);
         }
 
+        update() {
+            var images = this.selected();
+
+            images.forEach((el: Core.RsImage) => {
+                this.updateImage(el);
+            });
+        }
+
+        private updateImage(image: Core.RsImage) {
+            var $el = this.page.getImagePlace().find('#img__' + image.getId());
+
+            var $imageBlock = $el.find('.rs-image-block');
+            $el.find('img').hide().remove();
+            $imageBlock.addClass('loading');
+
+            image.getImage().then((img) => {
+                $imageBlock[0].appendChild(img);
+                $imageBlock.removeClass('loading');
+            });
+        }
+
         private renderImage(image: Core.RsImage) {
             image.getImage().then((img) => {
                 var $block = $(
@@ -63,21 +88,6 @@ module UI {
                 );
                 $block.find('.rs-image-block')[0].appendChild(img);
                 this.page.getImagePlace().append($block);
-                /*
-                var $canvas = $('<canvas id="' + image.getId() + '"></canvas>');
-                $block.find('.rs-image-block').append($canvas);
-                var c = <HTMLCanvasElement>$canvas[0];
-                var ctx = c.getContext('2d');
-
-                c.width = 150;
-                c.height = 120;
-
-                // todo keep ratio
-                new Core.ImageResizer(image.getImageData(), 150, 120).resize().then(
-                    (imageData) => {
-                        ctx.putImageData(imageData, 0, 0);
-                    }
-                );*/
             });
         }
     }

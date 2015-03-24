@@ -44,6 +44,34 @@
 
       .flex-grow(2);
 
+      &.loading {
+        font-family: FontAwesome;
+        color: @darkColor;
+        font-size: 150%;
+        display: block;
+
+        position: relative;
+
+        &:after {
+          font-family: FontAwesome;
+          content: "\f110";
+          display: block;
+          position: absolute;
+
+          font-size: 20px;
+          left: 0;
+          top: 0;
+          bottom: 0;
+          right: 0;
+          margin: auto;
+
+          width: 20px;
+          height: 20px;
+
+          z-index: 500;
+        }
+      }
+
       img {
         display: block;
         margin: 0 auto;

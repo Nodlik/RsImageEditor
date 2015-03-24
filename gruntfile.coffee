@@ -124,6 +124,7 @@ module.exports = (grunt) ->
           'build/rs-image-editor.full.min.js': [
             'build/lib/caman.pack.js'
             'build/lib/nunjucks-slim.min.js'
+            'build/lib/pica.min.js'
             'build/template.js'
             'build/rs-image-editor.js'
           ]

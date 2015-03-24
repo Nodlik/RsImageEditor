@@ -14,6 +14,8 @@ module Core {
         private originalImage: ImageData;
         private processedImage: ImageData;
 
+        private updateImage: boolean = true;
+
         private imageBase64: string = ''; // BASE 64 processed image
         private image: HTMLImageElement = null;
 
@@ -114,7 +116,8 @@ module Core {
 
             context.putImageData(this.originalImage, 0, 0);
 
-            this.image = null;
+            this.updateImage = true;
+
 
             /* RESIZE */
             var resizePromise: Promise<ImageData>;
@@ -215,7 +218,7 @@ module Core {
         }
 
         getImage(): Promise<HTMLImageElement> {
-            if (this.image != null) {
+            if ((this.image != null) && (!this.updateImage)) {
                 return Promise.resolve(this.image);
             }
 
@@ -224,7 +227,13 @@ module Core {
                     var img = new Image();
 
                     img.onload = () => {
+                        if (this.image != null) {
+                            this.image.src = "about:blank";
+                        }
+
                         this.image = img;
+                        this.updateImage = false;
+
                         resolve(img);
                     };
 

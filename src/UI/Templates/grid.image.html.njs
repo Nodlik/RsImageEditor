@@ -1,4 +1,4 @@
-<div class="rs-image" data-id="{{ image.id }}">
+<div class="rs-image" data-id="{{ image.id }}" id="img__{{ image.id }}">
     <div class="rs-image-block">
         <!--<img src="{{ image.src }}" />-->
         <!--{{ image.src }}-->

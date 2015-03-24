@@ -7,8 +7,11 @@
 
 module UI {
     export class Editor {
-        private pages: Page[] = [];
         private page: Page = null;
+
+        private gridPage = null;
+        private singlePage = null;
+
         private $imagePlace: JQuery;
         private $toolbarPlace: JQuery;
         private $popOver: JQuery;
@@ -59,7 +62,10 @@ module UI {
             this.progressBar = new UI.Widgets.RsProgressBar(this.$el.find('#rsProgressBar'));
             this.progressBar.on('stop', (e) => {
                 this.progressBar.stop('Loading complete!');
-            })
+            });
+
+            this.gridPage = new Page(this, this.images);
+            this.singlePage = new Page(this, this.images, this.gridPage);
         }
 
 
@@ -173,10 +179,14 @@ module UI {
             return this.editor;
         }
 
-        getPage(): Page { // ????
+        getPage(): Page {
             if (this.page == null) {
-                this.page = new Page(this, this.images);
-                this.pages.push(this.page);
+                if (this.images.count() == 1) {
+                    this.page = this.singlePage;
+                }
+                else {
+                    this.page = this.gridPage;
+                }
             }
 
             return this.page;
@@ -201,9 +211,15 @@ module UI {
         }
 
         appendImage(image: Core.RsImage) {
-            this.pages.forEach((page) => {
-                page.appendImage(image);
-            });
+            this.gridPage.appendImage(image);
+
+            if (this.images.count() == 1) {
+                this.singlePage.setImages(this.images.getImage(this.images.getImages()[0].getId()));
+                this.page = this.singlePage;
+            }
+            else {
+                this.page = this.gridPage;
+            }
         }
 
         /**
@@ -214,8 +230,9 @@ module UI {
         private editImage(imageId: string) {
             var image = this.images.getImage(imageId);
 
-            this.page = new Page(this, image, this.page);
-            this.pages.push(this.page);
+            this.singlePage.setImages(image);
+            this.page = this.singlePage;
+
             this.render();
         }
 

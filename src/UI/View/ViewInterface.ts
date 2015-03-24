@@ -3,6 +3,10 @@ module UI {
         type(): Core.ModuleViewType;
         selected(): Core.RsImage[];
         getInformation(): string;
+
         render();
+        update();
+
+        setImages(images: Core.ImageCollection);
     }
 }

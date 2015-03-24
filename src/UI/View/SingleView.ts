@@ -15,6 +15,19 @@ module UI {
             return Core.ModuleViewType.SINGLE;
         }
 
+        update() {
+            this.renderImage();
+        }
+
+        setImages(images: Core.ImageCollection) {
+            if (images.count() != 1) {
+                throw new Error('Invalid image collection');
+            }
+
+            this.image = images.getImages()[0];
+            this.scale = 1;
+        }
+
         render() {
             this.page.getImagePlace().html(
                 nunjucks.render('single.image.html.njs', {})

@@ -18,6 +18,7 @@ module Modules {
         init($el: JQuery) {
             var brightness = 0;
             var vibrance = 0;
+
             if (this.editor.UI().getType() == Core.ModuleViewType.SINGLE) {
                 var img = this.editor.UI().selected()[0];
 
@@ -55,18 +56,27 @@ module Modules {
         }
 
         doAction(action, value: number) {
-            var promiseArray: Promise<Core.RsImage>[] = [];
+            if (this.editor.UI().getType() == Core.ModuleViewType.GRID) {
+                var promiseArray: Promise<Core.RsImage>[] = [];
 
-            this.editor.UI().selected().forEach((img: Core.RsImage) =>
-                {
-                    var act = new action(img, value);
-                    promiseArray.push(img.getActionDispatcher().process(act));
-                }
-            );
+                this.editor.UI().selected().forEach((img: Core.RsImage) => {
+                        var act = new action(img, value);
+                        promiseArray.push(img.getActionDispatcher().process(act));
+                    }
+                );
 
-            Promise.all(promiseArray).then(() => {
-                this.editor.UI().render();
-            });
+                Promise.all(promiseArray).then(() => {
+                    this.editor.UI().getView().update();
+                });
+            }
+            else {
+                var image = this.editor.UI().selected()[0];
+                var act = new action(image, value);
+
+                image.getActionDispatcher().process(act).then(() => {
+                    this.editor.UI().getView().update();
+                });
+            }
         }
     }
 }

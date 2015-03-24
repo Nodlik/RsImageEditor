@@ -99,6 +99,8 @@ var output = "";
 try {
 output += "<div class=\"rs-image\" data-id=\"";
 output += runtime.suppressValue(runtime.memberLookup((runtime.contextOrFrameLookup(context, frame, "image")),"id", env.autoesc), env.autoesc);
+output += "\" id=\"img__";
+output += runtime.suppressValue(runtime.memberLookup((runtime.contextOrFrameLookup(context, frame, "image")),"id", env.autoesc), env.autoesc);
 output += "\">\n    <div class=\"rs-image-block\">\n        <!--<img src=\"";
 output += runtime.suppressValue(runtime.memberLookup((runtime.contextOrFrameLookup(context, frame, "image")),"src", env.autoesc), env.autoesc);
 output += "\" />-->\n        <!--";

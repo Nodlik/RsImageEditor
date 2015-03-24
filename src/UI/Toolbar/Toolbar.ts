@@ -8,9 +8,10 @@ module UI {
 
         render() {
             this.$toolbar.html("");
-            if (this.page.getParent() !== null) {
+            if ((this.page.getParent() !== null) && (this.page.getParent().images().count() > 1)) {
                 this.renderBackButton(this.$toolbar);
             }
+            
             this.renderCommonButton(this.$toolbar);
         }
 

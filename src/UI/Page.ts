@@ -22,21 +22,18 @@ module UI {
             return this.parent;
         }
 
+        setImages(imageCollection: Core.ImageCollection) {
+            this.imageCollection = imageCollection;
+
+            this.getView().setImages(this.imageCollection);
+        }
+
         appendImage(image: Core.RsImage) {
             this.imageCollection.add(image);
+        }
 
-            if (this.imageCollection.count() == 1) {
-                if (this.view.type() == Core.ModuleViewType.GRID) {
-                    this.view = null;
-                    this.view = new SingleView(this, this.imageCollection.getImages()[0]);
-                }
-            }
-            else {
-                if (this.view.type() == Core.ModuleViewType.SINGLE) {
-                    this.view = null;
-                    this.view = new GridView(this, this.imageCollection);
-                }
-            }
+        images(): Core.ImageCollection {
+            return this.imageCollection;
         }
 
         getView(): ViewInterface {
