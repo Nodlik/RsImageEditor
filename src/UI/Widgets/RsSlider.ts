@@ -51,6 +51,17 @@ module UI.Widgets {
             this.trigger('move', this.start);
         }
 
+        public set(value: number, label = '') {
+            this.$slider.css('left', this.getPixelPos(value) + 'px');
+
+            if (label == '') {
+                this.$slider.text(value.toString());
+            }
+            else {
+                this.$slider.text(label);
+            }
+        }
+
         private getVal(pixelPos: number): number {
             return Math.round( (pixelPos * ((this.max - this.min) / this.step)) / (this.$el.width() - this.$slider.width())) * this.step + this.min;
         }

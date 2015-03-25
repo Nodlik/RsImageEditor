@@ -11,7 +11,7 @@ module UI {
             if ((this.page.getParent() !== null) && (this.page.getParent().images().count() > 1)) {
                 this.renderBackButton(this.$toolbar);
             }
-            
+
             this.renderCommonButton(this.$toolbar);
         }
 

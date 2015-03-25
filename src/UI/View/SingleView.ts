@@ -17,6 +17,9 @@ module UI {
 
         update() {
             this.renderImage();
+            this.page.renderInformation();
+
+            $("#zoomValue").text(Math.floor(this.scale * 100) + '%');
         }
 
         setImages(images: Core.ImageCollection) {
@@ -28,6 +31,10 @@ module UI {
             this.scale = 1;
         }
 
+        showLoading() {}
+
+        hideLoading() {}
+
         render() {
             this.page.getImagePlace().html(
                 nunjucks.render('single.image.html.njs', {})
@@ -37,14 +44,16 @@ module UI {
             this.renderImage();
 
             this.setScale(this.scale);
+            var $b = $('body');
+            $b.off('.view');
 
-            $('#fitToWidth').click(() => {
+            $b.on('click.view', '#fitToWidth', () => {
                 this.setZoom(ZoomType.WIDTH);
 
                 return false;
             });
 
-            $('#sourceSize').click(() => {
+            $b.on('click.view', '#sourceSize', () => {
                 this.setZoom(ZoomType.SOURCE);
 
                 return false;
@@ -102,6 +111,9 @@ module UI {
         }
 
         private renderImage() {
+            this.canvas.width = this.image.getWidth();
+            this.canvas.height = this.image.getHeight();
+
             this.context.putImageData(this.image.getImageData(), 0, 0);
         }
 
@@ -111,9 +123,6 @@ module UI {
                 this.page.getImagePlace().find('#rsSingleImage').html('<canvas id="' + this.image.getId() + '"></canvas>');
             }
             this.canvas = <HTMLCanvasElement>this.page.getImagePlace().find('#' + this.image.getId())[0];
-
-            this.canvas.width = this.image.getWidth();
-            this.canvas.height = this.image.getHeight();
 
             this.context = this.canvas.getContext('2d');
         }

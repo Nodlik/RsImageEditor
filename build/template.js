@@ -32,6 +32,23 @@ root: root
 };
 })();
 })();
+(function() {(window.nunjucksPrecompiled = window.nunjucksPrecompiled || {})["crop-resize.dialog.html.njs"] = (function() {function root(env, context, frame, runtime, cb) {
+var lineno = null;
+var colno = null;
+var output = "";
+try {
+output += "<div>\n    <h2>Crop & Resize</h2>\n</div>\n\n<div class=\"crop-resize\">\n    <div class=\"crop-resize__action fit\">\n        <div class=\"crop-resize__title\">Fit to a rect</div>\n\n        <div class=\"fit__sizes sizes\">\n            <div class=\"sizes__width\">\n                Width<br />\n                <input type=\"number\" value=\"800\" />px\n            </div>\n            <div class=\"sizes__height\">\n                Height<br />\n                <input type=\"number\" value=\"400\" />px\n            </div>\n        </div>\n\n        <div class=\"fit__methods\">\n            <p>Choose Method:</p>\n            <ul class=\"module-list\">\n                <li data-value=\"resize-all\">Resizing on all sides</li>\n                <li data-value=\"stretch-to-width\">Stretch width</li>\n                <li data-value=\"stretch-to-height\">Stretch height</li>\n                <li data-value=\"stretch-to-rect\">Stretch to rect</li>\n            </ul>\n\n            <div class=\"fit__methods-canvas\">\n                <canvas id=\"fitCanvas\"></canvas>\n            </div>\n        </div>\n\n        <div class=\"fit__button\">\n            <button class=\"fit-button\">Apply</button>\n        </div>\n    </div>\n</div>";
+cb(null, output);
+;
+} catch (e) {
+  cb(runtime.handleError(e, lineno, colno));
+}
+}
+return {
+root: root
+};
+})();
+})();
 (function() {(window.nunjucksPrecompiled = window.nunjucksPrecompiled || {})["resize-grid.dialog.html.njs"] = (function() {function root(env, context, frame, runtime, cb) {
 var lineno = null;
 var colno = null;

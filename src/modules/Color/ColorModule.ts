@@ -5,6 +5,9 @@
 module Modules {
     export class ColorModule implements Core.HtmlModule
     {
+        private brightnessSlider: UI.Widgets.RsSlider;
+        private vibranceSlider: UI.Widgets.RsSlider;
+
         constructor(private editor: Core.RsImageEditor) {}
 
         html() {
@@ -13,6 +16,46 @@ module Modules {
 
         viewType(): Core.ModuleViewType {
             return Core.ModuleViewType.ANY;
+        }
+
+        unSelectImage(image: Core.RsImage) {
+            this.updateSelectState();
+        }
+
+        selectImage(image: Core.RsImage) {
+            this.updateSelectState();
+        }
+
+        private updateSelectState() {
+            var images = this.editor.UI().selected();
+
+            if (images.length == 1) {
+                var image = images[0];
+
+                this.brightnessSlider.set(image.brightness);
+                this.vibranceSlider.set(image.vibrance);
+            }
+            else if (images.length > 0) {
+                this.setSliderValue('brightness', this.brightnessSlider, images);
+                this.setSliderValue('vibrance', this.vibranceSlider, images);
+            }
+            else {
+                this.brightnessSlider.set(0, '-');
+                this.vibranceSlider.set(0, '-');
+            }
+        }
+
+        private setSliderValue(prop, slider: UI.Widgets.RsSlider, images: Core.RsImage[]) {
+            var v = images[0][prop];
+
+            for (var i = 0; i < images.length; i++) {
+                if (v != images[i][prop]) {
+                    slider.set(0, '-');
+
+                    return;
+                }
+            }
+            slider.set(v);
         }
 
         init($el: JQuery) {
@@ -26,11 +69,13 @@ module Modules {
                 vibrance = img.vibrance;
             }
 
-            new UI.Widgets.RsSlider( $el.find('#brightnessSlider'), -100, 100, 1, brightness).on('stopmove', (e) => {
+            this.brightnessSlider = new UI.Widgets.RsSlider( $el.find('#brightnessSlider'), -100, 100, 1, brightness);
+            this.brightnessSlider.on('stopmove', (e) => {
                this.doAction(BrightnessAction, e.data);
             });
 
-            new UI.Widgets.RsSlider( $el.find('#vibranceSlider'), -200, 200, 5, vibrance).on('stopmove', (e) => {
+            this.vibranceSlider = new UI.Widgets.RsSlider( $el.find('#vibranceSlider'), -200, 200, 5, vibrance);
+            this.vibranceSlider.on('stopmove', (e) => {
                 this.doAction(VibranceAction, e.data);
             });
         }
@@ -56,27 +101,19 @@ module Modules {
         }
 
         doAction(action, value: number) {
-            if (this.editor.UI().getType() == Core.ModuleViewType.GRID) {
-                var promiseArray: Promise<Core.RsImage>[] = [];
+            this.editor.UI().getView().showLoading();
 
-                this.editor.UI().selected().forEach((img: Core.RsImage) => {
-                        var act = new action(img, value);
-                        promiseArray.push(img.getActionDispatcher().process(act));
-                    }
-                );
+            var promiseArray: Promise<Core.RsImage>[] = [];
 
-                Promise.all(promiseArray).then(() => {
-                    this.editor.UI().getView().update();
-                });
-            }
-            else {
-                var image = this.editor.UI().selected()[0];
-                var act = new action(image, value);
+            this.editor.UI().selected().forEach((img: Core.RsImage) => {
+                    var act = new action(img, value);
+                    promiseArray.push(img.getActionDispatcher().process(act));
+                }
+            );
 
-                image.getActionDispatcher().process(act).then(() => {
-                    this.editor.UI().getView().update();
-                });
-            }
+            Promise.all(promiseArray).then(() => {
+                this.editor.UI().getView().update();
+            });
         }
     }
 }

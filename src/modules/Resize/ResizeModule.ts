@@ -21,6 +21,10 @@ module Modules {
             });
         }
 
+        selectImage(image: Core.RsImage) {}
+
+        unSelectImage(image: Core.RsImage) {}
+
         deinit() {
             this.editor.UI().clearPopover();
         }
@@ -126,7 +130,7 @@ module Modules {
             var act = new ResizeAction(this.image, width, height);
 
             this.image.getActionDispatcher().process(act).then(() => {
-                this.editor.UI().render();
+                this.editor.UI().getView().update();
             });
         }
     }

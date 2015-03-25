@@ -237,11 +237,21 @@ module UI {
         }
 
         private selectImage($el: JQuery) {
+            var image = this.images.getImage($el.data('id')).getImages()[0];
+
             if ($el.hasClass('rs-image-selected')) {
                 $el.removeClass('rs-image-selected');
+
+                if (this.activeModule) {
+                    this.activeModule.unSelectImage( image );
+                }
             }
             else {
                 $el.addClass('rs-image-selected');
+
+                if (this.activeModule) {
+                    this.activeModule.selectImage( image );
+                }
             }
         }
     }

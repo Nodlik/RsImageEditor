@@ -59,11 +59,7 @@ module UI {
             return new GridToolbar(this, this.editor.getEditor());
         }
 
-        render() {
-            this.getToolbar().render();
-
-            this.getImagePlace().html("");
-
+        renderInformation() {
             var inf = this.getView().getInformation();
             if (inf != '') {
                 this.getInformationPlace().parent().show();
@@ -72,6 +68,13 @@ module UI {
             else {
                 this.getInformationPlace().parent().hide();
             }
+        }
+
+        render() {
+            this.getToolbar().render();
+
+            this.getImagePlace().html("");
+            this.renderInformation();
 
             this.getView().render();
         }

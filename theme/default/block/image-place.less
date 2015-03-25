@@ -46,11 +46,25 @@
 
       &.loading {
         font-family: FontAwesome;
-        color: @darkColor;
+        color: @lightFontColor;
         font-size: 150%;
         display: block;
 
         position: relative;
+
+        &:before {
+          position: absolute;
+          display: block;
+          content: " ";
+          background-color: rgba(0, 0, 0, 0.3);
+
+          width: 100%;
+          height: 100%;
+          left: 0;
+          top: 0;
+
+          z-index: 40;
+        }
 
         &:after {
           font-family: FontAwesome;
@@ -65,12 +79,20 @@
           right: 0;
           margin: auto;
 
+          -webkit-animation:spin 4s linear infinite;
+          -moz-animation:spin 4s linear infinite;
+          animation:spin 4s linear infinite;
+
           width: 20px;
           height: 20px;
 
-          z-index: 500;
+          z-index: 50;
         }
       }
+
+      @-moz-keyframes spin { 100% { -moz-transform: rotate(360deg); } }
+      @-webkit-keyframes spin { 100% { -webkit-transform: rotate(360deg); } }
+      @keyframes spin { 100% { -webkit-transform: rotate(360deg); transform:rotate(360deg); } }
 
       img {
         display: block;

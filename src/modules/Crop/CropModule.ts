@@ -15,6 +15,14 @@ module Modules {
             return nunjucks.render('crop.dialog.html.njs', {});
         }
 
+        selectImage(image: Core.RsImage) {
+
+        }
+
+        unSelectImage(image: Core.RsImage) {
+
+        }
+
         deinit() {
             this.editor.UI().clearPopover();
 

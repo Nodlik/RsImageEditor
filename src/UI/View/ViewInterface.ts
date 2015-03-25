@@ -8,5 +8,8 @@ module UI {
         update();
 
         setImages(images: Core.ImageCollection);
+
+        showLoading();
+        hideLoading();
     }
 }

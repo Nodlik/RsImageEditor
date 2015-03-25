@@ -10,5 +10,7 @@ module Core {
         init($el: JQuery);
 
         viewType(): ModuleViewType;
+        selectImage(image: RsImage);
+        unSelectImage(image: RsImage);
     }
 }

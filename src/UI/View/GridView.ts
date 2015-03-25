@@ -61,14 +61,22 @@ module UI {
             });
         }
 
+        showLoading() {
+            this.page.getImagePlace().find('.rs-image-selected').find('.rs-image-block').addClass('loading');
+        }
+
+        hideLoading() {
+            this.page.getImagePlace().find('.rs-image-selected').find('.rs-image-block').removeClass('loading');
+        }
+
+
         private updateImage(image: Core.RsImage) {
             var $el = this.page.getImagePlace().find('#img__' + image.getId());
 
-            var $imageBlock = $el.find('.rs-image-block');
-            $el.find('img').hide().remove();
-            $imageBlock.addClass('loading');
-
             image.getImage().then((img) => {
+                var $imageBlock = $el.find('.rs-image-block');
+                $el.find('img').hide().remove();
+
                 $imageBlock[0].appendChild(img);
                 $imageBlock.removeClass('loading');
             });
