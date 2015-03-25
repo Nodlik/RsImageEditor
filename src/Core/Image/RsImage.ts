@@ -6,6 +6,11 @@ module Core {
         base64: string;
     }
 
+    interface CamanContext {
+        caman: CamanObject;
+        context: CanvasRenderingContext2D
+    }
+
     export class RsImage {
         private id = '';
 
@@ -18,6 +23,10 @@ module Core {
 
         private imageBase64: string = ''; // BASE 64 processed image
         private image: HTMLImageElement = null;
+
+        private imagePromise: Promise<HTMLImageElement>;
+
+        private caman: CamanContext = null;
 
         public width: number;
         public height: number;
@@ -45,6 +54,8 @@ module Core {
 
             return new Promise<RsImage>(
                 (resolve, reject) => {
+                    this.createImagePromise();
+
                     this.getImage().then((img) =>
                     {
                         var canvas = document.createElement('canvas');
@@ -107,6 +118,30 @@ module Core {
             this.height = height;
         }
 
+        private getCaman(imageData: ImageData, update: boolean = false): Promise<CamanContext> {
+            if ((!update) && (this.caman != null)) {
+                return Promise.resolve(this.caman);
+            }
+
+            return new Promise<CamanContext>(
+                (resolve, reject) => {
+                    var camanCanvas = document.createElement('canvas');
+                    var camanContext = camanCanvas.getContext('2d');
+
+                    camanCanvas.width = imageData.width;
+                    camanCanvas.height = imageData.height;
+                    camanContext.putImageData(imageData, 0, 0);
+
+                    Caman(camanCanvas, function() {
+                        resolve({
+                            caman: this,
+                            context: camanContext
+                        });
+                    });
+                }
+            );
+        }
+
         public save(): Promise<RsImage> {
             var canvas = document.createElement('canvas');
             var context = canvas.getContext('2d');
@@ -116,11 +151,14 @@ module Core {
 
             context.putImageData(this.originalImage, 0, 0);
 
-            this.updateImage = true;
-
-
             /* RESIZE */
             var resizePromise: Promise<ImageData>;
+            var updateCaman = false;
+
+            if ((this.width != this.processedImage.width) && (this.height != this.processedImage.height)) {
+                updateCaman = true;
+            }
+
             if ((this.width != this.originalImage.width) || (this.height != this.originalImage.height)) {
                 resizePromise = (new ImageResizer(this.originalImage, this.width, this.height)).resize();
             }
@@ -128,32 +166,39 @@ module Core {
                 resizePromise = Promise.resolve(context.getImageData(0, 0, this.width, this.height));
             }
 
+            canvas.width = 1;
+            canvas.height = 1;
+
+            canvas = null;
+
             /* CAMAN */
             return resizePromise.then(
-                (imageData: ImageData) =>
+                (imageData: ImageData) => {
+                    return this.getCaman(imageData, updateCaman);
+                }
+            ).then(
+                (camanContext) =>
                 {
-                    canvas.width = imageData.width;
-                    canvas.height = imageData.height;
-                    context.putImageData(imageData, 0, 0);
+                    this.caman = camanContext;
+
+                    this.caman.caman.revert();
+                    this.caman.caman.brightness(this.brightness);
+                    this.caman.caman.vibrance(this.vibrance);
 
                     return new Promise<ImageData>(
                         (resolve, reject) => {
-                            var self = this;
-                            Caman(canvas, function() {
-                                var caman = <CamanObject>this;
-
-                                caman.brightness(self.brightness);
-                                caman.vibrance(self.vibrance);
-
-                                caman.render(() => {
-                                    resolve(context.getImageData(0, 0, imageData.width, imageData.height));
-                                });
+                            this.caman.caman.render(() => {
+                                resolve(this.caman.context.getImageData(0, 0, this.width, this.height));
                             });
                         }
                     )
                 }
             ).then(
                 (imageData: ImageData) => {
+                    var canvas = document.createElement('canvas');
+                    var context = canvas.getContext('2d');
+
+                    this.processedImage = null;
                     this.processedImage = imageData;
 
                     canvas.width = this.processedImage.width;
@@ -165,7 +210,11 @@ module Core {
                     canvas.width = 1;
                     canvas.height = 1;
 
-                    this.getImage();
+                    canvas = null;
+
+                    this.getImage().then(() => {
+                        this.createImagePromise();
+                    });
 
                     return this;
                 }
@@ -217,12 +266,8 @@ module Core {
             return this.id;
         }
 
-        getImage(): Promise<HTMLImageElement> {
-            if ((this.image != null) && (!this.updateImage)) {
-                return Promise.resolve(this.image);
-            }
-
-            return new Promise<HTMLImageElement>(
+        createImagePromise() {
+            this.imagePromise = new Promise<HTMLImageElement>(
                 (resolve, reject) => {
                     var img = new Image();
 
@@ -232,13 +277,16 @@ module Core {
                         }
 
                         this.image = img;
-                        this.updateImage = false;
 
                         resolve(img);
                     };
 
                     img.src = this.imageBase64;
                 });
+        }
+
+        getImage(): Promise<HTMLImageElement> {
+            return this.imagePromise;
         }
     }
 }
