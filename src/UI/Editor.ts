@@ -115,23 +115,35 @@ module UI {
 
         redo() {
             var p = [];
+            this.getView().showLoading();
+
             this.selected().forEach((img) => {
                 p.push(img.getActionDispatcher().redo());
             });
 
             Promise.all(p).then(() => {
-                this.render();
+                this.getView().update();
+
+                if (this.activeModule) {
+                    this.activeModule.selectImage(null);
+                }
             });
         }
 
         undo() {
             var p = [];
+            this.getView().showLoading();
+
             this.selected().forEach((img) => {
                 p.push(img.getActionDispatcher().undo());
             });
 
             Promise.all(p).then(() => {
-                this.render();
+                this.getView().update();
+
+                if (this.activeModule) {
+                    this.activeModule.selectImage(null);
+                }
             });
         }
 

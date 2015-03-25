@@ -62,7 +62,6 @@ var Core;
             this.imageType = imageType;
             this.id = '';
             this.actionDispatcher = null;
-            this.updateImage = true;
             this.imageBase64 = ''; // BASE 64 processed image
             this.image = null;
             this.caman = null;
@@ -620,7 +619,7 @@ var UI;
             var $el = this.page.getImagePlace().find('#img__' + image.getId());
             image.getImage().then(function (img) {
                 var $imageBlock = $el.find('.rs-image-block');
-                $el.find('img').hide().remove();
+                $el.find('img').remove();
                 $imageBlock[0].appendChild(img);
                 $imageBlock.removeClass('loading');
             });
@@ -1037,21 +1036,29 @@ var UI;
         Editor.prototype.redo = function () {
             var _this = this;
             var p = [];
+            this.getView().showLoading();
             this.selected().forEach(function (img) {
                 p.push(img.getActionDispatcher().redo());
             });
             Promise.all(p).then(function () {
-                _this.render();
+                _this.getView().update();
+                if (_this.activeModule) {
+                    _this.activeModule.selectImage(null);
+                }
             });
         };
         Editor.prototype.undo = function () {
             var _this = this;
             var p = [];
+            this.getView().showLoading();
             this.selected().forEach(function (img) {
                 p.push(img.getActionDispatcher().undo());
             });
             Promise.all(p).then(function () {
-                _this.render();
+                _this.getView().update();
+                if (_this.activeModule) {
+                    _this.activeModule.selectImage(null);
+                }
             });
         };
         Editor.prototype.showPopover = function (content) {

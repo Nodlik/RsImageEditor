@@ -19,8 +19,6 @@ module Core {
         private originalImage: ImageData;
         private processedImage: ImageData;
 
-        private updateImage: boolean = true;
-
         private imageBase64: string = ''; // BASE 64 processed image
         private image: HTMLImageElement = null;
 

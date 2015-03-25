@@ -75,7 +75,7 @@ module UI {
 
             image.getImage().then((img) => {
                 var $imageBlock = $el.find('.rs-image-block');
-                $el.find('img').hide().remove();
+                $el.find('img').remove();
 
                 $imageBlock[0].appendChild(img);
                 $imageBlock.removeClass('loading');
