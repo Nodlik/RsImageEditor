@@ -112,9 +112,6 @@ module Core {
             var corner = this.getOriginalCoordinates(left, top);
             var size = this.getOriginalCoordinates(width, height);
 
-            console.log(corner);
-            console.log(size);
-
             this.originalImage = null;
             this.originalImage = context.getImageData(corner.x, corner.y, size.x, size.y);
 

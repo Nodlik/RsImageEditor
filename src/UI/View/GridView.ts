@@ -59,6 +59,7 @@ module UI {
             images.forEach((el: Core.RsImage) => {
                 this.updateImage(el);
             });
+            this.page.renderInformation();
         }
 
         showLoading() {

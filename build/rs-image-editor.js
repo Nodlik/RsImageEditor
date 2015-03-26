@@ -126,8 +126,6 @@ var Core;
             context.putImageData(this.originalImage, 0, 0);
             var corner = this.getOriginalCoordinates(left, top);
             var size = this.getOriginalCoordinates(width, height);
-            console.log(corner);
-            console.log(size);
             this.originalImage = null;
             this.originalImage = context.getImageData(corner.x, corner.y, size.x, size.y);
             this.width = width;
@@ -617,6 +615,7 @@ var UI;
             images.forEach(function (el) {
                 _this.updateImage(el);
             });
+            this.page.renderInformation();
         };
         GridView.prototype.showLoading = function () {
             this.page.getImagePlace().find('.rs-image-selected').find('.rs-image-block').addClass('loading');
@@ -1052,7 +1051,9 @@ var UI;
             Promise.all(p).then(function () {
                 _this.getView().update();
                 if (_this.activeModule) {
-                    _this.activeModule.selectImage(null);
+                    if ((_this.activeModule.viewType() == _this.getType()) || (_this.activeModule.viewType() == 2 /* ANY */)) {
+                        _this.activeModule.selectImage(null);
+                    }
                 }
             });
         };
@@ -1067,7 +1068,9 @@ var UI;
             Promise.all(p).then(function () {
                 _this.getView().update();
                 if (_this.activeModule) {
-                    _this.activeModule.selectImage(null);
+                    if ((_this.activeModule.viewType() == _this.getType()) || (_this.activeModule.viewType() == 2 /* ANY */)) {
+                        _this.activeModule.selectImage(null);
+                    }
                 }
             });
         };
@@ -1156,13 +1159,17 @@ var UI;
             if ($el.hasClass('rs-image-selected')) {
                 $el.removeClass('rs-image-selected');
                 if (this.activeModule) {
-                    this.activeModule.unSelectImage(image);
+                    if ((this.activeModule.viewType() == this.getType()) || (this.activeModule.viewType() == 2 /* ANY */)) {
+                        this.activeModule.unSelectImage(image);
+                    }
                 }
             }
             else {
                 $el.addClass('rs-image-selected');
                 if (this.activeModule) {
-                    this.activeModule.selectImage(image);
+                    if ((this.activeModule.viewType() == this.getType()) || (this.activeModule.viewType() == 2 /* ANY */)) {
+                        this.activeModule.selectImage(image);
+                    }
                 }
             }
         };
@@ -2092,6 +2099,7 @@ var Modules;
             this.$heightInput.on('input.CropResize', function (e) {
                 _this.update();
             });
+            this.$methods.removeClass('selected');
             this.selectMethod(this.$methods.eq(0));
             this.update();
         }

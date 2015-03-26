@@ -125,7 +125,9 @@ module UI {
                 this.getView().update();
 
                 if (this.activeModule) {
-                    this.activeModule.selectImage(null);
+                    if ((this.activeModule.viewType() == this.getType()) || (this.activeModule.viewType() == Core.ModuleViewType.ANY)) {
+                        this.activeModule.selectImage(null);
+                    }
                 }
             });
         }
@@ -144,7 +146,9 @@ module UI {
                 this.getView().update();
 
                 if (this.activeModule) {
-                    this.activeModule.selectImage(null);
+                    if ((this.activeModule.viewType() == this.getType()) || (this.activeModule.viewType() == Core.ModuleViewType.ANY)) {
+                        this.activeModule.selectImage(null);
+                    }
                 }
             });
         }
@@ -257,14 +261,18 @@ module UI {
                 $el.removeClass('rs-image-selected');
 
                 if (this.activeModule) {
-                    this.activeModule.unSelectImage( image );
+                    if ((this.activeModule.viewType() == this.getType()) || (this.activeModule.viewType() == Core.ModuleViewType.ANY)) {
+                        this.activeModule.unSelectImage(image);
+                    }
                 }
             }
             else {
                 $el.addClass('rs-image-selected');
 
                 if (this.activeModule) {
-                    this.activeModule.selectImage( image );
+                    if ((this.activeModule.viewType() == this.getType()) || (this.activeModule.viewType() == Core.ModuleViewType.ANY)) {
+                        this.activeModule.selectImage(image);
+                    }
                 }
             }
         }

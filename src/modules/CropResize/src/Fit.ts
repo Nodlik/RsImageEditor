@@ -74,6 +74,7 @@ module Modules {
                 this.update();
             });
 
+            this.$methods.removeClass('selected');
             this.selectMethod(this.$methods.eq(0));
             this.update();
         }
