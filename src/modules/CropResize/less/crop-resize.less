@@ -1,0 +1,151 @@
+@import "mixin";
+@import "../../../../theme/default/config/config";
+
+.crop-resize {
+  .crop-resize__title {
+    background-color: @decorationColor;
+    color: @backgroundColor;
+
+    padding: 5px 10px;
+    margin: 10px 0;
+
+    font-size: 80%;
+  }
+
+  .fit__sizes {
+    .flex(space-around);
+
+    box-sizing: border-box;
+    padding: 0 10px;
+
+    div {
+      font-size: 80%;
+    }
+  }
+
+  .fit__methods {
+    margin: 10px 0;
+    font-size: 90%;
+
+    position: relative;
+
+    p {
+      margin: 0 10px;
+      padding: 3px 0;
+    }
+
+    .module-list {
+      background-color: @backgroundSecondColor;
+      display: block;
+      padding: 5px 0;
+      margin: 0;
+
+      li {
+        font-size: 95%;
+        display: block;
+        padding: 4px 10px;
+        margin: 0;
+
+        color: #000000;
+        cursor: pointer;
+
+        &.selected {
+          color: #000000;
+          background-color: @backgroundColor;
+          .box-shadow(0, 0, 2px, 0, rgba(0, 0, 0, 0.5));
+        }
+      }
+    }
+
+    .fit__methods-canvas {
+      position: absolute;
+      width: 120px;
+      height: 90px;
+
+      top: 26px;
+      right: 10px;
+
+      .box-shadow(0, 0, 2px, 0, rgba(0, 0, 0, 0.5));
+
+      canvas {
+        width: 120px;
+        height: 90px;
+      }
+    }
+  }
+
+  .fit__method-position {
+    margin: 10px;
+
+    // flex-start
+    .flex(space-around);
+
+    p {
+      margin: 0;
+      padding: 2px;
+    }
+
+    .fit-position {
+      .flex-grow(0);
+      .flex-shrink(0);
+
+      width: 60px;
+      height: 60px;
+
+      position: relative;
+      border: solid 1px @backgroundSecondColor;
+      box-sizing: border-box;
+
+      .fp {
+        position: absolute;
+        cursor: pointer;
+
+        width: 20px;
+        height: 20px;
+        border: solid 1px @backgroundSecondColor;
+
+        box-sizing: border-box;
+
+        &.selected {
+          background-color: @decorationColor;
+        }
+
+        &:hover {
+          .background-opacity(@decorationColor, 0.5);
+        }
+      }
+    }
+
+  }
+
+  .fit-crop__button {
+    font-size: 80%;
+    margin: 0 10px;
+  }
+
+  .fit__button {
+    margin: 10px;
+    text-align: right;
+  }
+}
+
+.crop-button {
+  display: inline-block;
+  border: none;
+  background-color: @decorationColor;
+  .box-shadow(0, 0, 3px, 0, rgba(0, 0, 0, 0.5));
+  padding: 10px 20px;
+  color: @lightFontColor;
+  outline: none;
+  width: 200px;
+
+  font-size: 80%;
+
+  &:active {
+    padding: 10px 20px;
+  }
+
+  &:hover {
+     background-color: @decorationDarkColor;
+  }
+}

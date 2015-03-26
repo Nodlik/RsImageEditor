@@ -65,6 +65,7 @@ var Core;
             this.imageBase64 = ''; // BASE 64 processed image
             this.image = null;
             this.caman = null;
+            this.forceCamanUpdate = false;
             this.brightness = 0;
             this.vibrance = 0;
             this.hue = 0;
@@ -107,8 +108,8 @@ var Core;
         };
         RsImage.prototype.getOriginalCoordinates = function (x, y) {
             return {
-                x: (this.originalImage.width * x) / this.processedImage.width,
-                y: (this.originalImage.height * y) / this.processedImage.height
+                x: (this.originalImage.width * x) / this.processedImage.width | 0,
+                y: (this.originalImage.height * y) / this.processedImage.height | 0
             };
         };
         RsImage.prototype.getOriginalImage = function () {
@@ -125,9 +126,13 @@ var Core;
             context.putImageData(this.originalImage, 0, 0);
             var corner = this.getOriginalCoordinates(left, top);
             var size = this.getOriginalCoordinates(width, height);
+            console.log(corner);
+            console.log(size);
+            this.originalImage = null;
             this.originalImage = context.getImageData(corner.x, corner.y, size.x, size.y);
             this.width = width;
             this.height = height;
+            this.forceCamanUpdate = true;
         };
         RsImage.prototype.getCaman = function (imageData, update) {
             if (update === void 0) { update = false; }
@@ -152,12 +157,16 @@ var Core;
             var _this = this;
             var canvas = document.createElement('canvas');
             var context = canvas.getContext('2d');
-            canvas.width = this.width;
-            canvas.height = this.height;
+            canvas.width = this.originalImage.width;
+            canvas.height = this.originalImage.height;
             context.putImageData(this.originalImage, 0, 0);
             /* RESIZE */
             var resizePromise;
             var updateCaman = false;
+            if (this.forceCamanUpdate) {
+                updateCaman = true;
+                this.forceCamanUpdate = false;
+            }
             if ((this.width != this.processedImage.width) && (this.height != this.processedImage.height)) {
                 updateCaman = true;
             }
@@ -1051,7 +1060,8 @@ var UI;
             var _this = this;
             var p = [];
             this.getView().showLoading();
-            this.selected().forEach(function (img) {
+            var images = this.selected();
+            images.forEach(function (img) {
                 p.push(img.getActionDispatcher().undo());
             });
             Promise.all(p).then(function () {
@@ -1866,21 +1876,33 @@ var Modules;
             this.fit = null;
         }
         CropResizeModule.prototype.init = function ($el) {
-            var _this = this;
-            this.images = this.editor.UI().selected();
             this.view = this.editor.UI().getView();
+            this.$el = $el;
+            this.update();
+        };
+        CropResizeModule.prototype.update = function () {
+            var _this = this;
+            if (this.fit != null) {
+                this.fit.destroy();
+                this.fit = null;
+            }
+            this.images = this.editor.UI().selected();
             if (this.images.length > 0) {
-                this.fit = new Modules.Fit($el, this.images, this.editor.UI());
+                this.$el.show();
+                this.fit = new Modules.Fit(this.$el, this.images, this.editor.UI());
                 this.fit.on('apply', function (e) {
-                    _this.doAction(_this.createFitActions(_this.fit.getRect(), e.data));
+                    _this.doAction(_this.createFitActions(e.data.rect, e.data.method, e.data.fitPosition, e.data.isCanCrop));
                 });
             }
+            else {
+                this.$el.hide();
+            }
         };
-        CropResizeModule.prototype.createFitActions = function (rect, method) {
+        CropResizeModule.prototype.createFitActions = function (rect, method, position, isCanCrop) {
             this.editor.UI().getView().showLoading();
             var result = [];
             this.editor.UI().selected().forEach(function (img) {
-                var act = new Modules.FitAction(img, rect, method);
+                var act = new Modules.FitAction(img, rect, method, position, isCanCrop);
                 result.push(img.getActionDispatcher().process(act));
             });
             return result;
@@ -1895,8 +1917,10 @@ var Modules;
             return nunjucks.render('crop-resize.dialog.html.njs', {});
         };
         CropResizeModule.prototype.selectImage = function (image) {
+            this.update();
         };
         CropResizeModule.prototype.unSelectImage = function (image) {
+            this.update();
         };
         CropResizeModule.prototype.viewType = function () {
             return 1 /* GRID */;
@@ -1929,10 +1953,12 @@ var Modules;
 var Modules;
 (function (Modules) {
     var FitAction = (function () {
-        function FitAction(image, rect, method) {
+        function FitAction(image, rect, method, position, isCanCrop) {
             this.image = image;
             this.rect = rect;
             this.method = method;
+            this.position = position;
+            this.isCanCrop = isCanCrop;
             this.isCropped = false;
             if (method == 0 /* RESIZE */) {
                 this.size = Modules.SizeCalculation.getFitSize(rect.width, rect.height, this.image.width, this.image.height);
@@ -1958,53 +1984,43 @@ var Modules;
             this.image.width = this.size.width | 0;
             this.image.height = this.size.height | 0;
             return this.image.save().then(function (image) {
-                if (_this.isCropped) {
+                if ((_this.isCropped) && (_this.isCanCrop)) {
+                    var x = 0;
+                    var y = 0;
                     var w = _this.image.width;
                     if (w > _this.rect.width) {
                         w = _this.rect.width;
+                        if ((_this.position == 1 /* TOP */) || (_this.position == 7 /* BOTTOM */)) {
+                            x = (_this.image.width - _this.rect.width) / 2;
+                        }
+                        else if ((_this.position == 2 /* RIGHT_TOP */) || (_this.position == 5 /* RIGHT */) || (_this.position == 8 /* RIGHT_BOTTOM */)) {
+                            x = (_this.image.width - _this.rect.width);
+                        }
                     }
                     var h = _this.image.height;
                     if (h > _this.rect.height) {
                         h = _this.rect.height;
+                        if ((_this.position == 3 /* LEFT */) || (_this.position == 5 /* RIGHT */)) {
+                            y = (_this.image.height - _this.rect.height) / 2;
+                        }
+                        else if ((_this.position == 6 /* LEFT_BOTTOM */) || (_this.position == 7 /* BOTTOM */) || (_this.position == 8 /* RIGHT_BOTTOM */)) {
+                            y = (_this.image.height - _this.rect.height);
+                        }
                     }
-                    _this.image.crop(0, 0, w, h);
-                    return _this.image.save();
+                    return _this.image.getImage().then(function (img) {
+                        _this.image.crop(x, y, w, h);
+                        return _this.image.save();
+                    });
                 }
                 else {
                     return Promise.resolve(image);
                 }
             });
-            /*
-                        return new Promise<Core.RsImage>(
-                            (resolve, reject) => {
-                                this.image.save().then((image) => {
-                                    if (this.isCropped) {
-                                        var w = this.image.width;
-                                        if (w > this.rect.width) {
-                                            w = this.rect.width;
-                                        }
-            
-                                        var h = this.image.height;
-                                        if (h > this.rect.height) {
-                                            h = this.rect.height;
-                                        }
-            
-                                        this.image.crop(0, 0, w, h);
-                                        this.image.save().then((image) => {
-                                            resolve(image);
-                                        })
-                                    }
-                                    else {
-                                        resolve(image);
-                                    }
-                                });
-                            }
-                        );*/
         };
         FitAction.prototype.unExecute = function () {
             this.image.width = this.oldWidth;
             this.image.height = this.oldHeight;
-            if (this.isCropped) {
+            if ((this.isCropped) && (this.isCanCrop)) {
                 this.image.replaceOriginal(this.originalImage);
             }
             return this.image.save();
@@ -2022,6 +2038,18 @@ var Modules;
         FitMethod[FitMethod["RECT"] = 3] = "RECT";
     })(Modules.FitMethod || (Modules.FitMethod = {}));
     var FitMethod = Modules.FitMethod;
+    (function (FitPosition) {
+        FitPosition[FitPosition["LEFT_TOP"] = 0] = "LEFT_TOP";
+        FitPosition[FitPosition["TOP"] = 1] = "TOP";
+        FitPosition[FitPosition["RIGHT_TOP"] = 2] = "RIGHT_TOP";
+        FitPosition[FitPosition["LEFT"] = 3] = "LEFT";
+        FitPosition[FitPosition["CENTER"] = 4] = "CENTER";
+        FitPosition[FitPosition["RIGHT"] = 5] = "RIGHT";
+        FitPosition[FitPosition["LEFT_BOTTOM"] = 6] = "LEFT_BOTTOM";
+        FitPosition[FitPosition["BOTTOM"] = 7] = "BOTTOM";
+        FitPosition[FitPosition["RIGHT_BOTTOM"] = 8] = "RIGHT_BOTTOM";
+    })(Modules.FitPosition || (Modules.FitPosition = {}));
+    var FitPosition = Modules.FitPosition;
     var Fit = (function (_super) {
         __extends(Fit, _super);
         function Fit($el, images, ui) {
@@ -2034,6 +2062,9 @@ var Modules;
             this.fitCanvas = new Modules.FitMethodCanvas($el.find('#fitCanvas')[0]);
             this.$widthInput = $el.find('.sizes__width input');
             this.$heightInput = $el.find('.sizes__height input');
+            this.$widthInput.val(this.images[0].width.toString());
+            this.$heightInput.val(this.images[0].height.toString());
+            this.$position = $el.find('#fitPosition .fp');
             this.$button = $el.find('.fit-button');
             this.$methods = $el.find('.module-list li');
             this.$methods.on('click.CropResize', function (e) {
@@ -2041,10 +2072,75 @@ var Modules;
                 _this.selectMethod($(e.target));
             });
             this.$button.on('click.CropResize', function () {
-                _this.trigger('apply', _this.selected);
+                if (_this.isSizeValid(_this.getRectSize())) {
+                    _this.trigger('apply', {
+                        method: _this.selected,
+                        fitPosition: _this.getPosition(),
+                        rect: _this.getRect(),
+                        isCanCrop: $el.find('#fitCrop').is(':checked')
+                    });
+                }
                 return false;
             });
+            this.$position.on('click.CropResize', function (e) {
+                _this.$position.removeClass('selected');
+                _this.selectPosition($(e.target));
+            });
+            this.$widthInput.on('input.CropResize', function (e) {
+                _this.update();
+            });
+            this.$heightInput.on('input.CropResize', function (e) {
+                _this.update();
+            });
+            this.selectMethod(this.$methods.eq(0));
+            this.update();
         }
+        Fit.prototype.update = function () {
+            var size = this.getRectSize();
+            if (this.isSizeValid(size)) {
+                this.updateCanvas();
+            }
+        };
+        Fit.prototype.isSizeValid = function (size) {
+            return !(((size.width < 30) && (size.width > 9999)) || ((size.height < 30) && (size.height > 9999)));
+        };
+        Fit.prototype.selectPosition = function ($el) {
+            $el.addClass('selected');
+            this.updateCanvas();
+        };
+        Fit.prototype.getPosition = function () {
+            var $selected = this.$position.filter('.selected');
+            if ($selected) {
+                if ($selected.hasClass('fp-left-top')) {
+                    return 0 /* LEFT_TOP */;
+                }
+                else if ($selected.hasClass('fp-top')) {
+                    return 1 /* TOP */;
+                }
+                else if ($selected.hasClass('fp-right-top')) {
+                    return 2 /* RIGHT_TOP */;
+                }
+                else if ($selected.hasClass('fp-left')) {
+                    return 3 /* LEFT */;
+                }
+                else if ($selected.hasClass('fp-center')) {
+                    return 4 /* CENTER */;
+                }
+                else if ($selected.hasClass('fp-right')) {
+                    return 5 /* RIGHT */;
+                }
+                else if ($selected.hasClass('fp-left-bottom')) {
+                    return 6 /* LEFT_BOTTOM */;
+                }
+                else if ($selected.hasClass('fp-bottom')) {
+                    return 7 /* BOTTOM */;
+                }
+                else if ($selected.hasClass('fp-right-bottom')) {
+                    return 8 /* RIGHT_BOTTOM */;
+                }
+            }
+            return null;
+        };
         Fit.prototype.getSelectedMethod = function () {
             return this.selected;
         };
@@ -2065,27 +2161,41 @@ var Modules;
         Fit.prototype.selectMethod = function ($item) {
             this.images = this.ui.selected();
             $item.addClass('selected');
-            var rect = this.getRectSize();
             if ($item.data('value') == 'resize-all') {
                 this.selected = 0 /* RESIZE */;
-                this.fitCanvas.drawResizeAll(rect.width, rect.height, this.images[0].getWidth(), this.images[0].getHeight());
             }
             else if ($item.data('value') == 'stretch-to-width') {
                 this.selected = 1 /* WIDTH */;
-                this.fitCanvas.drawStretchToWidth(rect.width, rect.height, this.images[0].getWidth(), this.images[0].getHeight());
             }
             else if ($item.data('value') == 'stretch-to-height') {
                 this.selected = 2 /* HEIGHT */;
-                this.fitCanvas.drawStretchToHeight(rect.width, rect.height, this.images[0].getWidth(), this.images[0].getHeight());
             }
             else if ($item.data('value') == 'stretch-to-rect') {
                 this.selected = 3 /* RECT */;
-                this.fitCanvas.drawStretchToRect(rect.width, rect.height, this.images[0].getWidth(), this.images[0].getHeight());
+            }
+            this.updateCanvas();
+        };
+        Fit.prototype.updateCanvas = function () {
+            var rect = this.getRectSize();
+            if (this.selected == 0 /* RESIZE */) {
+                this.fitCanvas.drawResizeAll(rect.width, rect.height, this.images[0].getWidth(), this.images[0].getHeight(), this.getPosition());
+            }
+            else if (this.selected == 1 /* WIDTH */) {
+                this.fitCanvas.drawStretchToWidth(rect.width, rect.height, this.images[0].getWidth(), this.images[0].getHeight(), this.getPosition());
+            }
+            else if (this.selected == 2 /* HEIGHT */) {
+                this.fitCanvas.drawStretchToHeight(rect.width, rect.height, this.images[0].getWidth(), this.images[0].getHeight(), this.getPosition());
+            }
+            else if (this.selected == 3 /* RECT */) {
+                this.fitCanvas.drawStretchToRect(rect.width, rect.height, this.images[0].getWidth(), this.images[0].getHeight(), this.getPosition());
             }
         };
         Fit.prototype.destroy = function () {
             this.$methods.off('.CropResize');
             this.$button.off('.CropResize');
+            this.$position.off('.CropResize');
+            this.$widthInput.off('.CropResize');
+            this.$heightInput.off('.CropResize');
         };
         return Fit;
     })(UI.Widgets.RsWidget);
@@ -2097,8 +2207,8 @@ var Modules;
         function FitMethodCanvas(canvas) {
             this.canvas = canvas;
             this.canvasWidth = 120;
-            this.canvasHeight = 120;
-            this.canvasPadding = 20;
+            this.canvasHeight = 90;
+            this.canvasPadding = 5;
             this.context = this.canvas.getContext('2d');
         }
         FitMethodCanvas.prototype.initCanvas = function () {
@@ -2106,7 +2216,7 @@ var Modules;
             this.canvas.height = this.canvasHeight;
             this.context.fillStyle = '#FFFFFF';
             this.context.strokeStyle = '#000000';
-            this.context.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
+            this.context.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
         };
         FitMethodCanvas.prototype.getNewSize = function (rect, image) {
             var k = Math.min((this.canvasWidth - this.canvasPadding * 2) / Math.max(rect.width, image.width), (this.canvasHeight - this.canvasPadding * 2) / Math.max(rect.height, image.height));
@@ -2115,73 +2225,93 @@ var Modules;
                 image: { width: image.width * k, height: image.height * k }
             };
         };
-        FitMethodCanvas.prototype.drawResizeAll = function (rectWidth, rectHeight, imageWidth, imageHeight) {
-            this.initCanvas();
-            var sizes = this.getNewSize({ width: rectWidth, height: rectHeight }, Modules.SizeCalculation.getFitSize(rectWidth, rectHeight, imageWidth, imageHeight));
-            this.context.strokeRect(this.canvasPadding, this.canvasPadding, sizes.rect.width, sizes.rect.height);
-            this.context.strokeStyle = '#FF0000';
-            this.context.strokeRect(this.canvasPadding, this.canvasPadding, sizes.image.width, sizes.image.height);
-        };
-        FitMethodCanvas.prototype.drawStretchToWidth = function (rectWidth, rectHeight, imageWidth, imageHeight) {
-            this.initCanvas();
-            var sizes = this.getNewSize({ width: rectWidth, height: rectHeight }, Modules.SizeCalculation.getStretchWidthSize(rectWidth, rectHeight, imageWidth, imageHeight));
-            this.context.strokeRect(this.canvasPadding, this.canvasPadding, sizes.rect.width, sizes.rect.height);
-            this.context.strokeStyle = '#FF0000';
-            var visibleRect = {
-                width: sizes.image.width,
-                height: sizes.image.height
+        /**
+         * dw = (rect.width - image.width) * k
+         * dh = (rect.height - image.height) * k
+         *
+         * @param image
+         * @param rect
+         * @param dw
+         * @param dh
+         */
+        FitMethodCanvas.prototype.getCalculatedPosition = function (image, rect, dw, dh) {
+            var dRect = { x: 0, y: 0 };
+            var dImage = { x: 0, y: 0 };
+            if (rect.height >= image.height) {
+                dImage.y = dh;
+                dRect.y = 0;
+            }
+            else {
+                dImage.y = 0;
+                dRect.y = -dh;
+            }
+            if (rect.width >= image.width) {
+                dImage.x = dw;
+                dRect.x = 0;
+            }
+            else {
+                dImage.x = 0;
+                dRect.x = -dw;
+            }
+            return {
+                'image': dImage,
+                'rect': dRect
             };
-            if (sizes.image.height > sizes.rect.height) {
-                visibleRect.height = sizes.rect.height;
+        };
+        FitMethodCanvas.prototype.getStartCord = function (image, rect, fitPoint) {
+            if (fitPoint == 0 /* LEFT_TOP */) {
+                return { 'rect': { x: 0, y: 0 }, 'image': { x: 0, y: 0 } };
             }
-            this.context.strokeRect(this.canvasPadding, this.canvasPadding, visibleRect.width, visibleRect.height);
-            if (sizes.image.height > sizes.rect.height) {
-                this.context.setLineDash([2]);
-                this.context.strokeRect(this.canvasPadding, this.canvasPadding + visibleRect.height, visibleRect.width, sizes.image.height - visibleRect.height);
+            else if (fitPoint == 1 /* TOP */) {
+                return this.getCalculatedPosition(image, rect, (rect.width - image.width) / 2, 0);
+            }
+            else if (fitPoint == 2 /* RIGHT_TOP */) {
+                return this.getCalculatedPosition(image, rect, rect.width - image.width, 0);
+            }
+            else if (fitPoint == 3 /* LEFT */) {
+                return this.getCalculatedPosition(image, rect, 0, (rect.height - image.height) / 2);
+            }
+            else if (fitPoint == 5 /* RIGHT */) {
+                return this.getCalculatedPosition(image, rect, rect.width - image.width, (rect.height - image.height) / 2);
+            }
+            else if (fitPoint == 6 /* LEFT_BOTTOM */) {
+                return this.getCalculatedPosition(image, rect, 0, (rect.height - image.height));
+            }
+            else if (fitPoint == 7 /* BOTTOM */) {
+                return this.getCalculatedPosition(image, rect, (rect.width - image.width) / 2, rect.height - image.height);
+            }
+            else if (fitPoint == 8 /* RIGHT_BOTTOM */) {
+                return this.getCalculatedPosition(image, rect, rect.width - image.width, rect.height - image.height);
             }
         };
-        FitMethodCanvas.prototype.drawStretchToHeight = function (rectWidth, rectHeight, imageWidth, imageHeight) {
-            this.initCanvas();
-            var sizes = this.getNewSize({ width: rectWidth, height: rectHeight }, Modules.SizeCalculation.getStretchHeightSize(rectWidth, rectHeight, imageWidth, imageHeight));
-            this.context.strokeRect(this.canvasPadding, this.canvasPadding, sizes.rect.width, sizes.rect.height);
-            this.context.strokeStyle = '#FF0000';
-            var visibleRect = {
-                width: sizes.image.width,
-                height: sizes.image.height
-            };
-            if (sizes.image.width > sizes.rect.width) {
-                visibleRect.width = sizes.rect.width;
-            }
-            this.context.strokeRect(this.canvasPadding, this.canvasPadding, visibleRect.width, visibleRect.height);
-            if (sizes.image.width > sizes.rect.width) {
-                this.context.setLineDash([2]);
-                this.context.strokeRect(this.canvasPadding + visibleRect.width, this.canvasPadding, sizes.image.width - visibleRect.width, sizes.image.height);
-            }
+        FitMethodCanvas.prototype.drawIntersect = function (rect, image) {
+            this.context.setLineDash([]);
+            this.context.fillStyle = 'gray';
+            this.context.fillRect(Math.max(rect.left, image.left), Math.max(rect.top, image.top), Math.min(rect.width, image.width), Math.min(rect.height, image.height));
         };
-        FitMethodCanvas.prototype.drawStretchToRect = function (rectWidth, rectHeight, imageWidth, imageHeight) {
-            this.initCanvas();
-            var sizes = this.getNewSize({ width: rectWidth, height: rectHeight }, Modules.SizeCalculation.getStretchRectSize(rectWidth, rectHeight, imageWidth, imageHeight));
-            this.context.strokeRect(this.canvasPadding, this.canvasPadding, sizes.rect.width, sizes.rect.height);
+        FitMethodCanvas.prototype.draw = function (rect, image) {
+            this.context.strokeRect(rect.left, rect.top, rect.width, rect.height);
             this.context.strokeStyle = '#FF0000';
-            var visibleRect = {
-                width: sizes.image.width,
-                height: sizes.image.height
-            };
-            if (sizes.image.width > sizes.rect.width) {
-                visibleRect.width = sizes.rect.width;
-            }
-            if (sizes.image.height > sizes.rect.height) {
-                visibleRect.height = sizes.rect.height;
-            }
-            this.context.strokeRect(this.canvasPadding, this.canvasPadding, visibleRect.width, visibleRect.height);
-            if (sizes.image.width > sizes.rect.width) {
-                this.context.setLineDash([2]);
-                this.context.strokeRect(this.canvasPadding + visibleRect.width, this.canvasPadding, sizes.image.width - visibleRect.width, sizes.image.height);
-            }
-            if (sizes.image.height > sizes.rect.height) {
-                this.context.setLineDash([2]);
-                this.context.strokeRect(this.canvasPadding, this.canvasPadding + visibleRect.height, visibleRect.width, sizes.image.height - visibleRect.height);
-            }
+            this.context.setLineDash([2]);
+            this.context.strokeRect(image.left, image.top, image.width, image.height);
+            this.drawIntersect(rect, image);
+        };
+        FitMethodCanvas.prototype.render = function (sizes, fitPoint) {
+            this.initCanvas();
+            var start = this.getStartCord(sizes.image, sizes.rect, fitPoint);
+            this.draw({ left: this.canvasPadding + start.rect.x, top: this.canvasPadding + start.rect.y, width: sizes.rect.width, height: sizes.rect.height }, { left: this.canvasPadding + start.image.x, top: this.canvasPadding + start.image.y, width: sizes.image.width, height: sizes.image.height });
+        };
+        FitMethodCanvas.prototype.drawResizeAll = function (rectWidth, rectHeight, imageWidth, imageHeight, fitPoint) {
+            this.render(this.getNewSize({ width: rectWidth, height: rectHeight }, Modules.SizeCalculation.getFitSize(rectWidth, rectHeight, imageWidth, imageHeight)), fitPoint);
+        };
+        FitMethodCanvas.prototype.drawStretchToWidth = function (rectWidth, rectHeight, imageWidth, imageHeight, fitPoint) {
+            this.render(this.getNewSize({ width: rectWidth, height: rectHeight }, Modules.SizeCalculation.getStretchWidthSize(rectWidth, rectHeight, imageWidth, imageHeight)), fitPoint);
+        };
+        FitMethodCanvas.prototype.drawStretchToHeight = function (rectWidth, rectHeight, imageWidth, imageHeight, fitPoint) {
+            this.render(this.getNewSize({ width: rectWidth, height: rectHeight }, Modules.SizeCalculation.getStretchHeightSize(rectWidth, rectHeight, imageWidth, imageHeight)), fitPoint);
+        };
+        FitMethodCanvas.prototype.drawStretchToRect = function (rectWidth, rectHeight, imageWidth, imageHeight, fitPoint) {
+            this.render(this.getNewSize({ width: rectWidth, height: rectHeight }, Modules.SizeCalculation.getStretchRectSize(rectWidth, rectHeight, imageWidth, imageHeight)), fitPoint);
         };
         return FitMethodCanvas;
     })();

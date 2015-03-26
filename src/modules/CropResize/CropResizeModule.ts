@@ -13,33 +13,48 @@ module Modules {
     {
         private images: Core.RsImage[] = [];
         private view: UI.GridView;
+        private $el: JQuery;
 
         private fit: Fit = null;
 
         constructor(private editor: Core.RsImageEditor) {}
 
         init($el: JQuery) {
-            this.images = this.editor.UI().selected();
             this.view = <UI.GridView>this.editor.UI().getView();
+            this.$el = $el;
 
+            this.update();
+        }
+
+        private update() {
+            if (this.fit != null) {
+                this.fit.destroy();
+                this.fit = null;
+            }
+
+            this.images = this.editor.UI().selected();
             if (this.images.length > 0) {
-                this.fit = new Fit($el, this.images, this.editor.UI());
+                this.$el.show();
+                this.fit = new Fit(this.$el, this.images, this.editor.UI());
 
                 this.fit.on('apply', (e) => {
                     this.doAction(
-                        this.createFitActions(this.fit.getRect(), e.data)
+                        this.createFitActions(e.data.rect, e.data.method, e.data.fitPosition, e.data.isCanCrop)
                     )
                 });
             }
+            else {
+                this.$el.hide();
+            }
         }
 
-        createFitActions(rect: Rect, method: FitMethod): Promise<Core.RsImage>[] {
+        createFitActions(rect: Rect, method: FitMethod, position: FitPosition, isCanCrop: boolean): Promise<Core.RsImage>[] {
             this.editor.UI().getView().showLoading();
 
             var result: Promise<Core.RsImage>[] = [];
 
             this.editor.UI().selected().forEach((img: Core.RsImage) => {
-                    var act = new FitAction(img, rect, method);
+                    var act = new FitAction(img, rect, method, position, isCanCrop);
                     result.push(img.getActionDispatcher().process(act));
                 }
             );
@@ -57,9 +72,13 @@ module Modules {
             return nunjucks.render('crop-resize.dialog.html.njs', {});
         }
 
-        selectImage(image: Core.RsImage) {}
+        selectImage(image: Core.RsImage) {
+            this.update();
+        }
 
-        unSelectImage(image: Core.RsImage) {}
+        unSelectImage(image: Core.RsImage) {
+            this.update();
+        }
 
         viewType(): Core.ModuleViewType {
             return Core.ModuleViewType.GRID;

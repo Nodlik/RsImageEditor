@@ -134,7 +134,9 @@ module UI {
             var p = [];
             this.getView().showLoading();
 
-            this.selected().forEach((img) => {
+            var images = this.selected();
+
+            images.forEach((img) => {
                 p.push(img.getActionDispatcher().undo());
             });
 

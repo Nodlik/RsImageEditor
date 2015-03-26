@@ -1,16 +1,25 @@
-
 module Modules {
     interface FitSize {
         rect: Size;
         image: Size;
     }
 
+    interface Cord {
+        x: number;
+        y: number;
+    }
+
+    interface StartCord {
+        rect: Cord;
+        image: Cord;
+    }
+
     export class FitMethodCanvas {
         private context: CanvasRenderingContext2D;
 
         private canvasWidth = 120;
-        private canvasHeight = 120;
-        private canvasPadding = 20;
+        private canvasHeight = 90;
+        private canvasPadding = 5;
 
         constructor(private canvas: HTMLCanvasElement) {
             this.context = this.canvas.getContext('2d');
@@ -22,7 +31,7 @@ module Modules {
 
             this.context.fillStyle = '#FFFFFF';
             this.context.strokeStyle = '#000000';
-            this.context.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
+            this.context.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
         }
 
         private getNewSize(rect: Size, image: Size): FitSize {
@@ -37,111 +46,141 @@ module Modules {
             }
         }
 
-        drawResizeAll(rectWidth, rectHeight, imageWidth, imageHeight) {
-            this.initCanvas();
+        /**
+         * dw = (rect.width - image.width) * k
+         * dh = (rect.height - image.height) * k
+         *
+         * @param image
+         * @param rect
+         * @param dw
+         * @param dh
+         */
+        private getCalculatedPosition(image: Size, rect: Size, dw: number, dh: number): StartCord {
+            var dRect: Cord = {x: 0, y: 0};
+            var dImage: Cord = {x: 0, y: 0};
 
-            var sizes = this.getNewSize(
-                {width: rectWidth, height: rectHeight},
-                SizeCalculation.getFitSize(rectWidth, rectHeight, imageWidth, imageHeight)
-            );
-
-            this.context.strokeRect(this.canvasPadding, this.canvasPadding, sizes.rect.width, sizes.rect.height);
-            this.context.strokeStyle = '#FF0000';
-
-            this.context.strokeRect(this.canvasPadding, this.canvasPadding, sizes.image.width, sizes.image.height);
-        }
-
-        drawStretchToWidth(rectWidth, rectHeight, imageWidth, imageHeight) {
-            this.initCanvas();
-
-            var sizes = this.getNewSize(
-                {width: rectWidth, height: rectHeight},
-                SizeCalculation.getStretchWidthSize(rectWidth, rectHeight, imageWidth, imageHeight)
-            );
-
-            this.context.strokeRect(this.canvasPadding, this.canvasPadding, sizes.rect.width, sizes.rect.height);
-            this.context.strokeStyle = '#FF0000';
-
-            var visibleRect: Size = {
-                width: sizes.image.width,
-                height: sizes.image.height
-            };
-
-            if (sizes.image.height > sizes.rect.height) {
-                visibleRect.height = sizes.rect.height;
+            if (rect.height >= image.height) {
+                dImage.y = dh;
+                dRect.y = 0;
+            }
+            else {
+                dImage.y = 0;
+                dRect.y = -dh;
             }
 
-            this.context.strokeRect(this.canvasPadding, this.canvasPadding, visibleRect.width, visibleRect.height);
+            if (rect.width >= image.width) {
+                dImage.x = dw;
+                dRect.x = 0;
+            }
+            else {
+                dImage.x = 0;
+                dRect.x = -dw;
+            }
 
-            if (sizes.image.height > sizes.rect.height) {
-                this.context.setLineDash([2]);
-                this.context.strokeRect(this.canvasPadding, this.canvasPadding + visibleRect.height, visibleRect.width, sizes.image.height - visibleRect.height);
+            return {
+                'image': dImage,
+                'rect': dRect
             }
         }
 
-        drawStretchToHeight(rectWidth, rectHeight, imageWidth, imageHeight) {
-            this.initCanvas();
-
-            var sizes = this.getNewSize(
-                {width: rectWidth, height: rectHeight},
-                SizeCalculation.getStretchHeightSize(rectWidth, rectHeight, imageWidth, imageHeight)
-            );
-
-            this.context.strokeRect(this.canvasPadding, this.canvasPadding, sizes.rect.width, sizes.rect.height);
-            this.context.strokeStyle = '#FF0000';
-
-            var visibleRect: Size = {
-                width: sizes.image.width,
-                height: sizes.image.height
-            };
-
-            if (sizes.image.width > sizes.rect.width) {
-                visibleRect.width = sizes.rect.width;
+        private getStartCord(image: Size, rect: Size, fitPoint: FitPosition): StartCord {
+            if (fitPoint == FitPosition.LEFT_TOP) {
+                return {'rect': {x: 0, y: 0}, 'image':  {x: 0, y: 0}};
             }
-
-            this.context.strokeRect(this.canvasPadding, this.canvasPadding, visibleRect.width, visibleRect.height);
-
-            if (sizes.image.width > sizes.rect.width) {
-                this.context.setLineDash([2]);
-                this.context.strokeRect(this.canvasPadding+ visibleRect.width, this.canvasPadding, sizes.image.width - visibleRect.width, sizes.image.height);
+            else if (fitPoint == FitPosition.TOP) {
+                return this.getCalculatedPosition(image, rect, (rect.width - image.width) / 2, 0);
+            }
+            else if (fitPoint == FitPosition.RIGHT_TOP) {
+                return this.getCalculatedPosition(image, rect, rect.width - image.width, 0);
+            }
+            else if (fitPoint == FitPosition.LEFT) {
+                return this.getCalculatedPosition(image, rect, 0, (rect.height - image.height) / 2);
+            }
+            else if (fitPoint == FitPosition.RIGHT) {
+                return this.getCalculatedPosition(image, rect, rect.width - image.width, (rect.height - image.height) / 2);
+            }
+            else if (fitPoint == FitPosition.LEFT_BOTTOM) {
+                return this.getCalculatedPosition(image, rect, 0, (rect.height - image.height));
+            }
+            else if (fitPoint == FitPosition.BOTTOM) {
+                return this.getCalculatedPosition(image, rect, (rect.width - image.width) / 2, rect.height - image.height);
+            }
+            else if (fitPoint == FitPosition.RIGHT_BOTTOM) {
+                return this.getCalculatedPosition(image, rect, rect.width - image.width, rect.height - image.height);
             }
         }
 
-        drawStretchToRect(rectWidth, rectHeight, imageWidth, imageHeight) {
-            this.initCanvas();
+        private drawIntersect(rect: Rect, image: Rect) {
+            this.context.setLineDash([]);
 
-            var sizes = this.getNewSize(
-                {width: rectWidth, height: rectHeight},
-                SizeCalculation.getStretchRectSize(rectWidth, rectHeight, imageWidth, imageHeight)
+            this.context.fillStyle = 'gray';
+            this.context.fillRect(
+                Math.max(rect.left, image.left),
+                Math.max(rect.top, image.top),
+                Math.min(rect.width, image.width),
+                Math.min(rect.height, image.height)
             );
+        }
 
-            this.context.strokeRect(this.canvasPadding, this.canvasPadding, sizes.rect.width, sizes.rect.height);
+        private draw(rect: Rect, image: Rect) {
+            this.context.strokeRect(rect.left, rect.top, rect.width, rect.height);
             this.context.strokeStyle = '#FF0000';
 
-            var visibleRect: Size = {
-                width: sizes.image.width,
-                height: sizes.image.height
-            };
+            this.context.setLineDash([2]);
+            this.context.strokeRect(image.left, image.top, image.width, image.height);
 
-            if (sizes.image.width > sizes.rect.width) {
-                visibleRect.width = sizes.rect.width;
-            }
+            this.drawIntersect(rect, image);
+        }
 
-            if (sizes.image.height > sizes.rect.height) {
-                visibleRect.height = sizes.rect.height;
-            }
+        private render(sizes, fitPoint: FitPosition) {
+            this.initCanvas();
 
-            this.context.strokeRect(this.canvasPadding, this.canvasPadding, visibleRect.width, visibleRect.height);
+            var start = this.getStartCord(sizes.image, sizes.rect, fitPoint);
 
-            if (sizes.image.width > sizes.rect.width) {
-                this.context.setLineDash([2]);
-                this.context.strokeRect(this.canvasPadding+ visibleRect.width, this.canvasPadding, sizes.image.width - visibleRect.width, sizes.image.height);
-            }
+            this.draw(
+                {left: this.canvasPadding + start.rect.x, top: this.canvasPadding + start.rect.y, width: sizes.rect.width, height: sizes.rect.height},
+                {left: this.canvasPadding + start.image.x, top: this.canvasPadding + start.image.y, width: sizes.image.width, height: sizes.image.height}
+            );
+        }
 
-            if (sizes.image.height > sizes.rect.height) {
-                this.context.setLineDash([2]);
-                this.context.strokeRect(this.canvasPadding, this.canvasPadding + visibleRect.height, visibleRect.width, sizes.image.height - visibleRect.height);
-            }
+        drawResizeAll(rectWidth, rectHeight, imageWidth, imageHeight, fitPoint: FitPosition) {
+            this.render(
+                this.getNewSize(
+                    {width: rectWidth, height: rectHeight},
+                    SizeCalculation.getFitSize(rectWidth, rectHeight, imageWidth, imageHeight)
+                ),
+                fitPoint
+            )
+        }
+
+        drawStretchToWidth(rectWidth, rectHeight, imageWidth, imageHeight, fitPoint: FitPosition) {
+            this.render(
+                this.getNewSize(
+                    {width: rectWidth, height: rectHeight},
+                    SizeCalculation.getStretchWidthSize(rectWidth, rectHeight, imageWidth, imageHeight)
+                ),
+                fitPoint
+            )
+        }
+
+        drawStretchToHeight(rectWidth, rectHeight, imageWidth, imageHeight, fitPoint: FitPosition) {
+            this.render(
+                this.getNewSize(
+                    {width: rectWidth, height: rectHeight},
+                    SizeCalculation.getStretchHeightSize(rectWidth, rectHeight, imageWidth, imageHeight)
+                ),
+                fitPoint
+            )
+        }
+
+        drawStretchToRect(rectWidth, rectHeight, imageWidth, imageHeight, fitPoint: FitPosition) {
+            this.render(
+                this.getNewSize(
+                    {width: rectWidth, height: rectHeight},
+                    SizeCalculation.getStretchRectSize(rectWidth, rectHeight, imageWidth, imageHeight)
+                ),
+                fitPoint
+            )
         }
     }
 }

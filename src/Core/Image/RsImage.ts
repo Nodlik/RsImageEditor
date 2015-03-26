@@ -25,6 +25,7 @@ module Core {
         private imagePromise: Promise<HTMLImageElement>;
 
         private caman: CamanContext = null;
+        private forceCamanUpdate: boolean = false;
 
         public width: number;
         public height: number;
@@ -88,8 +89,8 @@ module Core {
 
         private getOriginalCoordinates(x: number, y: number) {
             return {
-                x: (this.originalImage.width * x) / this.processedImage.width,
-                y: (this.originalImage.height * y) / this.processedImage.height
+                x: (this.originalImage.width * x) / this.processedImage.width | 0,
+                y: (this.originalImage.height * y) / this.processedImage.height | 0
             }
         }
 
@@ -111,9 +112,16 @@ module Core {
             var corner = this.getOriginalCoordinates(left, top);
             var size = this.getOriginalCoordinates(width, height);
 
+            console.log(corner);
+            console.log(size);
+
+            this.originalImage = null;
             this.originalImage = context.getImageData(corner.x, corner.y, size.x, size.y);
+
             this.width = width;
             this.height = height;
+
+            this.forceCamanUpdate = true;
         }
 
         private getCaman(imageData: ImageData, update: boolean = false): Promise<CamanContext> {
@@ -144,14 +152,19 @@ module Core {
             var canvas = document.createElement('canvas');
             var context = canvas.getContext('2d');
 
-            canvas.width = this.width;
-            canvas.height = this.height;
+            canvas.width = this.originalImage.width;
+            canvas.height = this.originalImage.height;
 
             context.putImageData(this.originalImage, 0, 0);
 
             /* RESIZE */
             var resizePromise: Promise<ImageData>;
+
             var updateCaman = false;
+            if (this.forceCamanUpdate) {
+                updateCaman = true;
+                this.forceCamanUpdate = false;
+            }
 
             if ((this.width != this.processedImage.width) && (this.height != this.processedImage.height)) {
                 updateCaman = true;
@@ -193,6 +206,7 @@ module Core {
                 }
             ).then(
                 (imageData: ImageData) => {
+
                     var canvas = document.createElement('canvas');
                     var context = canvas.getContext('2d');
 
