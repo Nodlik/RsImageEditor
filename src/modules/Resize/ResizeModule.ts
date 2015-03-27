@@ -25,6 +25,8 @@ module Modules {
 
         unSelectImage(image: Core.RsImage) {}
 
+        update() {}
+
         deinit() {
             this.editor.getInterface().clearPopover();
         }
@@ -57,7 +59,7 @@ module Modules {
                 }
                 else {
                     this.isLocked = true;
-                    this.update(this.image);
+                    this.updateSize(this.image);
                     render();
 
                     this.$lock.find('i').attr('class', 'fa fa-lock');
@@ -96,7 +98,7 @@ module Modules {
         }
 
 
-        private update(image: Core.RsImage) {
+        private updateSize(image: Core.RsImage) {
             var w = parseInt(this.$widthInput.val());
             var h = parseInt(this.$heightInput.val());
 

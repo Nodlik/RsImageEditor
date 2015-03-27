@@ -23,6 +23,10 @@ module Modules {
 
         }
 
+        update() {
+
+        }
+
         deinit() {
             this.editor.getInterface().clearPopover();
 

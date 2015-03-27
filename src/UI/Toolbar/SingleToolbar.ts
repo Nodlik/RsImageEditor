@@ -9,7 +9,7 @@ module UI {
 
             this.renderModuleToolbar(Core.ModuleViewType.SINGLE, this.$toolbar);
 
-            this.editor.initToolbar(this.$toolbar);
+            this.editor.getInterface().initToolbar(this.$toolbar);
         }
     }
 }

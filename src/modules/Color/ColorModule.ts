@@ -27,6 +27,10 @@ module Modules {
             this.updateSelectState();
         }
 
+        update() {
+            this.updateSelectState();
+        }
+
         private updateSelectState() {
             var images = this.editor.selected();
 

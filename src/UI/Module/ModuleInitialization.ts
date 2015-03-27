@@ -34,9 +34,9 @@ module UI {
         }
 
         static renderModule(editorModule: Core.EditorModule, editor: UI.Editor) {
-            editor.getActiveModule().then((m) => {
-                m.deinit();
-            });
+            if (editor.getActiveModule() != null) {
+                editor.getActiveModule().deinit();
+            }
 
             (<Core.HtmlModule> editorModule).init(
                 editor.getInterface().showPopover((<Core.HtmlModule> editorModule).html())

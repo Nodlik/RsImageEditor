@@ -12,20 +12,30 @@ module UI {
         }
 
         imageUndo() {
-
+            this.imageHistoryAction('Undo');
         }
 
         imageRedo() {
-
+            this.imageHistoryAction('Redo');
         }
 
 
         redo() {
-            this.imageHistoryAction('Redo');
+
         }
 
         undo() {
-            this.imageHistoryAction('Undo');
+
+        }
+
+        doModuleAction(action, type: Core.ModuleViewType = Core.ModuleViewType.ANY) {
+            if (this.controller.getActiveModule() != null) {
+                var m = this.controller.getActiveModule();
+
+                if ((m.viewType() == type) || (m.viewType() == Core.ModuleViewType.ANY)) {
+                    action.call(this.controller, m);
+                }
+            }
         }
 
         private getView(): ViewInterface {
@@ -48,12 +58,9 @@ module UI {
 
             Promise.all(p).then(() => {
                 this.getView().update();
-/*
-                if (this.activeModule) {
-                    if ((this.activeModule.viewType() == this.getType()) || (this.activeModule.viewType() == Core.ModuleViewType.ANY)) {
-                        this.activeModule.selectImage(null);
-                    }
-                }*/
+                this.doModuleAction((m) => {
+                    m.update();
+                }, this.controller.getType());
             });
         }
     }

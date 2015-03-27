@@ -59,7 +59,7 @@ module Modules {
             });
         }
 
-        private update() {
+        public update() {
             this.deleteHelpers();
 
             this.images = this.editor.selected();

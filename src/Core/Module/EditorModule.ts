@@ -9,6 +9,8 @@ module Core {
         deinit(): void;
         init($el: JQuery);
 
+        update(): void;
+
         viewType(): ModuleViewType;
         selectImage(image: RsImage);
         unSelectImage(image: RsImage);

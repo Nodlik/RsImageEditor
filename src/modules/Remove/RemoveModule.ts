@@ -33,6 +33,10 @@ module Modules {
 
         }
 
+        update() {
+
+        }
+
         init($el: JQuery) {
         }
 
