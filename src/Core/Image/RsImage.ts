@@ -27,6 +27,8 @@ module Core {
         private caman: CamanContext = null;
         private forceCamanUpdate: boolean = false;
 
+        public isDeleted = false;
+
         public width: number;
         public height: number;
 
@@ -287,7 +289,7 @@ module Core {
 
                         this.image = img;
 
-                        resolve(img);
+                        resolve(this.image);
                     };
 
                     img.src = this.imageBase64;

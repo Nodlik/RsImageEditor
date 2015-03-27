@@ -16,6 +16,7 @@ module Core {
             this.registerModule('color', new Modules.ColorModule(this.editor), ModuleViewType.ANY);
             this.registerModule('crop', new Modules.CropModule(this.editor), ModuleViewType.SINGLE);
             this.registerModule('crop-resize', new Modules.CropResizeModule(this.editor), ModuleViewType.GRID);
+            this.registerModule('remove', new Modules.RemoveModule(this.editor), ModuleViewType.ANY);
         }
 
         registerModule(name: string, editorModule: EditorModule, type: ModuleViewType) {

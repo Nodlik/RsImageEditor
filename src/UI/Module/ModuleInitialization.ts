@@ -15,7 +15,11 @@ module UI {
         }
 
         static initAction($button: JQuery, editorModule: Core.EditorModule, editor: Core.RsImageEditor) {
-
+            $button.click(() =>
+                {
+                    (<Core.ActionModule>editorModule).process();
+                }
+            );
         }
 
         static initDelegate($button: JQuery, editorModule: Core.EditorModule, editor: Core.RsImageEditor) {

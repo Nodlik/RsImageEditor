@@ -1,5 +1,5 @@
 /// <reference path="../Image/RsImage.ts"/>
-/// <reference path="EditorAction.ts"/>
+/// <reference path="ImageAction.ts"/>
 
 module Core {
     interface ActionFunction {
@@ -8,7 +8,7 @@ module Core {
 
     export class ActionDispatcher {
         private image: RsImage;
-        private actions: EditorAction[];
+        private actions: ImageAction[];
         private actionsResult: Promise<RsImage>[];
         private current: number = -1;
 
@@ -18,7 +18,7 @@ module Core {
             this.actionsResult = [];
         }
 
-        process(action: EditorAction): Promise<any> {
+        process(action: ImageAction): Promise<any> {
             this.actions.splice(this.current + 1);
             this.actions.push(action);
             this.current++;
@@ -27,6 +27,22 @@ module Core {
             this.actionsResult.push(this.doAction(action.execute, action));
 
             return _.last(this.actionsResult);
+        }
+
+        getUndoAction(): ImageAction {
+            if (this.current >= 0) {
+                return this.actions[this.current];
+            }
+
+            return null;
+        }
+
+        getRedoAction(): ImageAction {
+            if (this.current < this.actions.length - 1) {
+                return this.actions[this.current + 1];
+            }
+
+            return null;
         }
 
 
@@ -54,7 +70,7 @@ module Core {
             return Promise.resolve(this.image);
         }
 
-        private doAction(actionFunction: ActionFunction, object: EditorAction): Promise<any> {
+        private doAction(actionFunction: ActionFunction, object: ImageAction): Promise<any> {
             if (this.actionsResult.length == 0) {
                 return actionFunction.apply(object);
             }

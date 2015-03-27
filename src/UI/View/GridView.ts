@@ -1,5 +1,7 @@
 module UI {
     export class GridView implements ViewInterface {
+        public needRefresh: boolean = false;
+
         constructor(private page: Page, private imageCollection: Core.ImageCollection) {
         }
 
@@ -7,21 +9,20 @@ module UI {
             return Core.ModuleViewType.GRID;
         }
 
+
+        getActualImage(): Core.RsImage[] {
+            return this.imageCollection.getAll();
+        }
+
         render() {
             this.page.getImagePlace().html("");
             var images = this.imageCollection.getImages();
 
-            if (images.length > 0) {
-                var i = 0;
-                var intervalId = setInterval(() => {
-                    this.renderImage(images[i]);
+            this.needRefresh = false;
 
-                    i++;
-                    if (i == images.length) {
-                        clearInterval(intervalId);
-                    }
-                }, 10);
-            }
+            images.forEach((img) => {
+                this.renderImage(img);
+            });
         }
 
         setImages(images: Core.ImageCollection) {
@@ -54,12 +55,17 @@ module UI {
         }
 
         update() {
-            var images = this.selected();
+            if (!this.needRefresh) {
+                var images = this.imageCollection.getImages();
 
-            images.forEach((el: Core.RsImage) => {
-                this.updateImage(el);
-            });
-            this.page.renderInformation();
+                images.forEach((el: Core.RsImage) => {
+                    this.updateImage(el);
+                });
+                this.page.renderInformation();
+            }
+            else {
+                this.render();
+            }
         }
 
         showLoading() {
@@ -85,18 +91,20 @@ module UI {
 
         private renderImage(image: Core.RsImage) {
             image.getImage().then((img) => {
-                var $block = $(
-                    nunjucks.render('grid.image.html.njs', {
-                        image: {
-                            src: img,
-                            name: image.getName(),
-                            id: image.getId(),
-                            label: image.getLabel()
-                        }
-                    })
-                );
-                $block.find('.rs-image-block')[0].appendChild(img);
-                this.page.getImagePlace().append($block);
+                if (!image.isDeleted) {
+                    var $block = $(
+                        nunjucks.render('grid.image.html.njs', {
+                            image: {
+                                src: img,
+                                name: image.getName(),
+                                id: image.getId(),
+                                label: image.getLabel()
+                            }
+                        })
+                    );
+                    $block.find('.rs-image-block')[0].appendChild(img);
+                    this.page.getImagePlace().append($block);
+                }
             });
         }
     }

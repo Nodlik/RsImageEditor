@@ -2,6 +2,8 @@ module UI {
     enum ZoomType {WIDTH, HEIGHT, SOURCE}
 
     export class SingleView implements ViewInterface {
+        public needRefresh: boolean = false;
+
         private canvas: HTMLCanvasElement = null;
         private context: CanvasRenderingContext2D;
 
@@ -15,11 +17,20 @@ module UI {
             return Core.ModuleViewType.SINGLE;
         }
 
-        update() {
-            this.renderImage();
-            this.page.renderInformation();
+        getActualImage(): Core.RsImage[] {
+            return [this.image];
+        }
 
-            $("#zoomValue").text(Math.floor(this.scale * 100) + '%');
+        update() {
+            if (!this.needRefresh) {
+                this.renderImage();
+                this.page.renderInformation();
+
+                $("#zoomValue").text(Math.floor(this.scale * 100) + '%');
+            }
+            else {
+                this.render()
+            }
         }
 
         setImages(images: Core.ImageCollection) {
@@ -58,6 +69,8 @@ module UI {
 
                 return false;
             });
+
+            this.needRefresh = false;
         }
 
         setZoom(zoom: ZoomType) {

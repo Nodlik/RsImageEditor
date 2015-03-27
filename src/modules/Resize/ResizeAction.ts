@@ -1,8 +1,10 @@
 /// <reference path="../../Core/Image/RsImage.ts"/>
-/// <reference path="../../Core/Action/EditorAction.ts"/>
+/// <reference path="../../Core/Action/ImageAction.ts"/>
 
 module Modules {
-    export class ResizeAction implements Core.EditorAction {
+    export class ResizeAction implements Core.ImageAction {
+        public needRender: boolean = true;
+
         private oldWidth: number;
         private oldHeight: number;
 

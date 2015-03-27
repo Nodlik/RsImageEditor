@@ -66,19 +66,32 @@ module Core {
         }
 
         count(): number {
-            return this.images.length;
+            return this.getImages().length;
+        }
+
+        getAll(): RsImage[] {
+            return this.images;
         }
 
         getImages(): RsImage[] {
-            return this.images;
+            var result = [];
+            this.images.forEach((img) => {
+                if (!img.isDeleted) {
+                    result.push(img);
+                }
+            });
+
+            return result;
         }
 
         getImage(imageId: string): ImageCollection {
             var result = new ImageCollection(this.manager);
 
             this.images.forEach((image) => {
-                if (image.getId() == imageId) {
-                    result.add(image);
+                if (!image.isDeleted) {
+                    if (image.getId() == imageId) {
+                        result.add(image);
+                    }
                 }
             });
 
@@ -90,7 +103,9 @@ module Core {
 
             this.images.forEach((image) => {
                 if (_.contains(ids, image.getId())) {
-                    result.push(image);
+                    if (!image.isDeleted) {
+                        result.push(image);
+                    }
                 }
             });
 

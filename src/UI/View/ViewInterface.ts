@@ -1,5 +1,7 @@
 module UI {
     export interface ViewInterface {
+        needRefresh: boolean;
+
         type(): Core.ModuleViewType;
         selected(): Core.RsImage[];
         getInformation(): string;
@@ -11,5 +13,7 @@ module UI {
 
         showLoading();
         hideLoading();
+
+        getActualImage(): Core.RsImage[];
     }
 }

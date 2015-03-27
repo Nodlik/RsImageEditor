@@ -1,8 +1,10 @@
 /// <reference path="../../Core/Image/RsImage.ts"/>
-/// <reference path="../../Core/Action/EditorAction.ts"/>
+/// <reference path="../../Core/Action/ImageAction.ts"/>
 
 module Modules {
-    export class FitAction implements Core.EditorAction {
+    export class FitAction implements Core.ImageAction {
+        public needRender: boolean = false;
+
         private originalImage: ImageData;
         private oldWidth: number;
         private oldHeight: number;

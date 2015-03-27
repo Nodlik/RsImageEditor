@@ -1,10 +1,11 @@
 /// <reference path="../../Core/Image/RsImage.ts"/>
 /// <reference path="../../Core/Image/ImageResizer.ts"/>
-/// <reference path="../../Core/Action/EditorAction.ts"/>
+/// <reference path="../../Core/Action/ImageAction.ts"/>
 
 
 module Modules {
-    export class BrightnessAction implements Core.EditorAction {
+    export class BrightnessAction implements Core.ImageAction {
+        public needRender: boolean = false;
         private oldBrightness: number;
 
         constructor(public image: Core.RsImage, private brightness: number) {

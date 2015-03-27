@@ -2,9 +2,9 @@
 
 module Core {
     export interface EditorAction {
-        image: RsImage;
+        editor: RsImageEditor;
 
-        execute(): Promise<RsImage>;
-        unExecute(): Promise<RsImage>;
+        execute(): boolean;
+        unExecute(): boolean;
     }
 }

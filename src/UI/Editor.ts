@@ -117,7 +117,12 @@ module UI {
             var p = [];
             this.getView().showLoading();
 
-            this.selected().forEach((img) => {
+            this.getView().getActualImage().forEach((img) => {
+                var act = img.getActionDispatcher().getRedoAction();
+                if ((act) && (act.needRender)) {
+                    this.getView().needRefresh = true;
+                }
+
                 p.push(img.getActionDispatcher().redo());
             });
 
@@ -136,9 +141,13 @@ module UI {
             var p = [];
             this.getView().showLoading();
 
-            var images = this.selected();
+            this.getView().getActualImage().forEach((img) => {
+                var act = img.getActionDispatcher().getUndoAction();
 
-            images.forEach((img) => {
+                if ((act) && (act.needRender)) {
+                    this.getView().needRefresh = true;
+                }
+
                 p.push(img.getActionDispatcher().undo());
             });
 

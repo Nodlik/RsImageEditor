@@ -1,6 +1,6 @@
 /// <reference path="../Image/RsImage.ts"/>
 /// <reference path="../Image/RsImage.ts"/>
-/// <reference path="EditorAction.ts"/>
+/// <reference path="ImageAction.ts"/>
 var Core;
 (function (Core) {
     var ActionDispatcher = (function () {
@@ -17,6 +17,18 @@ var Core;
             this.actionsResult.splice(this.current);
             this.actionsResult.push(this.doAction(action.execute, action));
             return _.last(this.actionsResult);
+        };
+        ActionDispatcher.prototype.getUndoAction = function () {
+            if (this.current >= 0) {
+                return this.actions[this.current];
+            }
+            return null;
+        };
+        ActionDispatcher.prototype.getRedoAction = function () {
+            if (this.current < this.actions.length - 1) {
+                return this.actions[this.current + 1];
+            }
+            return null;
         };
         ActionDispatcher.prototype.undo = function () {
             if (this.current >= 0) {
@@ -66,6 +78,7 @@ var Core;
             this.image = null;
             this.caman = null;
             this.forceCamanUpdate = false;
+            this.isDeleted = false;
             this.brightness = 0;
             this.vibrance = 0;
             this.hue = 0;
@@ -250,7 +263,7 @@ var Core;
                         _this.image.src = "about:blank";
                     }
                     _this.image = img;
-                    resolve(img);
+                    resolve(_this.image);
                 };
                 img.src = _this.imageBase64;
             });
@@ -306,13 +319,14 @@ var Core;
 })(Core || (Core = {}));
 /// <reference path="../../Core/Image/RsImage.ts"/>
 /// <reference path="../../Core/Image/ImageResizer.ts"/>
-/// <reference path="../../Core/Action/EditorAction.ts"/>
+/// <reference path="../../Core/Action/ImageAction.ts"/>
 var Modules;
 (function (Modules) {
     var BrightnessAction = (function () {
         function BrightnessAction(image, brightness) {
             this.image = image;
             this.brightness = brightness;
+            this.needRender = false;
         }
         BrightnessAction.prototype.execute = function () {
             this.oldBrightness = this.image.brightness;
@@ -428,16 +442,27 @@ var Core;
             };
         };
         ImageCollection.prototype.count = function () {
-            return this.images.length;
+            return this.getImages().length;
+        };
+        ImageCollection.prototype.getAll = function () {
+            return this.images;
         };
         ImageCollection.prototype.getImages = function () {
-            return this.images;
+            var result = [];
+            this.images.forEach(function (img) {
+                if (!img.isDeleted) {
+                    result.push(img);
+                }
+            });
+            return result;
         };
         ImageCollection.prototype.getImage = function (imageId) {
             var result = new ImageCollection(this.manager);
             this.images.forEach(function (image) {
-                if (image.getId() == imageId) {
-                    result.add(image);
+                if (!image.isDeleted) {
+                    if (image.getId() == imageId) {
+                        result.add(image);
+                    }
                 }
             });
             return result;
@@ -446,7 +471,9 @@ var Core;
             var result = [];
             this.images.forEach(function (image) {
                 if (_.contains(ids, image.getId())) {
-                    result.push(image);
+                    if (!image.isDeleted) {
+                        result.push(image);
+                    }
                 }
             });
             return result;
@@ -467,6 +494,7 @@ var UI;
         function SingleView(page, image) {
             this.page = page;
             this.image = image;
+            this.needRefresh = false;
             this.canvas = null;
             this.scale = 1;
             this.scale = 1;
@@ -474,10 +502,18 @@ var UI;
         SingleView.prototype.type = function () {
             return 0 /* SINGLE */;
         };
+        SingleView.prototype.getActualImage = function () {
+            return [this.image];
+        };
         SingleView.prototype.update = function () {
-            this.renderImage();
-            this.page.renderInformation();
-            $("#zoomValue").text(Math.floor(this.scale * 100) + '%');
+            if (!this.needRefresh) {
+                this.renderImage();
+                this.page.renderInformation();
+                $("#zoomValue").text(Math.floor(this.scale * 100) + '%');
+            }
+            else {
+                this.render();
+            }
         };
         SingleView.prototype.setImages = function (images) {
             if (images.count() != 1) {
@@ -506,6 +542,7 @@ var UI;
                 _this.setZoom(2 /* SOURCE */);
                 return false;
             });
+            this.needRefresh = false;
         };
         SingleView.prototype.setZoom = function (zoom) {
             var $container = this.page.getImagePlace().find('.rs-single-image');
@@ -569,24 +606,22 @@ var UI;
         function GridView(page, imageCollection) {
             this.page = page;
             this.imageCollection = imageCollection;
+            this.needRefresh = false;
         }
         GridView.prototype.type = function () {
             return 1 /* GRID */;
+        };
+        GridView.prototype.getActualImage = function () {
+            return this.imageCollection.getAll();
         };
         GridView.prototype.render = function () {
             var _this = this;
             this.page.getImagePlace().html("");
             var images = this.imageCollection.getImages();
-            if (images.length > 0) {
-                var i = 0;
-                var intervalId = setInterval(function () {
-                    _this.renderImage(images[i]);
-                    i++;
-                    if (i == images.length) {
-                        clearInterval(intervalId);
-                    }
-                }, 10);
-            }
+            this.needRefresh = false;
+            images.forEach(function (img) {
+                _this.renderImage(img);
+            });
         };
         GridView.prototype.setImages = function (images) {
             this.imageCollection = images;
@@ -611,11 +646,16 @@ var UI;
         };
         GridView.prototype.update = function () {
             var _this = this;
-            var images = this.selected();
-            images.forEach(function (el) {
-                _this.updateImage(el);
-            });
-            this.page.renderInformation();
+            if (!this.needRefresh) {
+                var images = this.imageCollection.getImages();
+                images.forEach(function (el) {
+                    _this.updateImage(el);
+                });
+                this.page.renderInformation();
+            }
+            else {
+                this.render();
+            }
         };
         GridView.prototype.showLoading = function () {
             this.page.getImagePlace().find('.rs-image-selected').find('.rs-image-block').addClass('loading');
@@ -635,16 +675,18 @@ var UI;
         GridView.prototype.renderImage = function (image) {
             var _this = this;
             image.getImage().then(function (img) {
-                var $block = $(nunjucks.render('grid.image.html.njs', {
-                    image: {
-                        src: img,
-                        name: image.getName(),
-                        id: image.getId(),
-                        label: image.getLabel()
-                    }
-                }));
-                $block.find('.rs-image-block')[0].appendChild(img);
-                _this.page.getImagePlace().append($block);
+                if (!image.isDeleted) {
+                    var $block = $(nunjucks.render('grid.image.html.njs', {
+                        image: {
+                            src: img,
+                            name: image.getName(),
+                            id: image.getId(),
+                            label: image.getLabel()
+                        }
+                    }));
+                    $block.find('.rs-image-block')[0].appendChild(img);
+                    _this.page.getImagePlace().append($block);
+                }
             });
         };
         return GridView;
@@ -849,6 +891,9 @@ var UI;
             return editorModule;
         };
         ModuleInitialization.initAction = function ($button, editorModule, editor) {
+            $button.click(function () {
+                editorModule.process();
+            });
         };
         ModuleInitialization.initDelegate = function ($button, editorModule, editor) {
             var _this = this;
@@ -1045,7 +1090,11 @@ var UI;
             var _this = this;
             var p = [];
             this.getView().showLoading();
-            this.selected().forEach(function (img) {
+            this.getView().getActualImage().forEach(function (img) {
+                var act = img.getActionDispatcher().getRedoAction();
+                if ((act) && (act.needRender)) {
+                    _this.getView().needRefresh = true;
+                }
                 p.push(img.getActionDispatcher().redo());
             });
             Promise.all(p).then(function () {
@@ -1061,8 +1110,11 @@ var UI;
             var _this = this;
             var p = [];
             this.getView().showLoading();
-            var images = this.selected();
-            images.forEach(function (img) {
+            this.getView().getActualImage().forEach(function (img) {
+                var act = img.getActionDispatcher().getUndoAction();
+                if ((act) && (act.needRender)) {
+                    _this.getView().needRefresh = true;
+                }
                 p.push(img.getActionDispatcher().undo());
             });
             Promise.all(p).then(function () {
@@ -1194,6 +1246,7 @@ var Core;
             this.registerModule('color', new Modules.ColorModule(this.editor), 2 /* ANY */);
             this.registerModule('crop', new Modules.CropModule(this.editor), 0 /* SINGLE */);
             this.registerModule('crop-resize', new Modules.CropResizeModule(this.editor), 1 /* GRID */);
+            this.registerModule('remove', new Modules.RemoveModule(this.editor), 2 /* ANY */);
         }
         ModuleManager.prototype.registerModule = function (name, editorModule, type) {
             if (!(name in this.modules)) {
@@ -1485,13 +1538,14 @@ var Modules;
 })(Modules || (Modules = {}));
 /// <reference path="../../Core/Image/RsImage.ts"/>
 /// <reference path="../../Core/Image/ImageResizer.ts"/>
-/// <reference path="../../Core/Action/EditorAction.ts"/>
+/// <reference path="../../Core/Action/ImageAction.ts"/>
 var Modules;
 (function (Modules) {
     var VibranceAction = (function () {
         function VibranceAction(image, value) {
             this.image = image;
             this.value = value;
+            this.needRender = false;
         }
         VibranceAction.prototype.execute = function () {
             this.oldValue = this.image.vibrance;
@@ -1507,22 +1561,41 @@ var Modules;
     Modules.VibranceAction = VibranceAction;
 })(Modules || (Modules = {}));
 /// <reference path="../../Core/Image/RsImage.ts"/>
-/// <reference path="../../Core/Action/EditorAction.ts"/>
+/// <reference path="../../Core/Action/ImageAction.ts"/>
 var Modules;
 (function (Modules) {
     var CropAction = (function () {
-        function CropAction(image, left, top, width, height) {
+        function CropAction(image, left, top, width, height, position) {
+            if (position === void 0) { position = null; }
             this.image = image;
             this.left = left;
             this.top = top;
             this.width = width;
             this.height = height;
+            this.position = position;
+            this.needRender = false;
         }
         CropAction.prototype.execute = function () {
             this.oldWidth = this.image.getWidth();
             this.oldHeight = this.image.getHeight();
             this.originalImage = this.image.getOriginalImage();
-            this.image.crop(this.left, this.top, this.width, this.height);
+            var x = this.left;
+            var y = this.top;
+            if (this.position != null) {
+                if ((this.position == 1 /* TOP */) || (this.position == 7 /* BOTTOM */) || (this.position == 4 /* CENTER */)) {
+                    x = (this.image.width - this.width) / 2;
+                }
+                else if ((this.position == 2 /* RIGHT_TOP */) || (this.position == 5 /* RIGHT */) || (this.position == 8 /* RIGHT_BOTTOM */)) {
+                    x = (this.image.width - this.width);
+                }
+                if ((this.position == 3 /* LEFT */) || (this.position == 5 /* RIGHT */) || (this.position == 4 /* CENTER */)) {
+                    y = (this.image.height - this.height) / 2;
+                }
+                else if ((this.position == 6 /* LEFT_BOTTOM */) || (this.position == 7 /* BOTTOM */) || (this.position == 8 /* RIGHT_BOTTOM */)) {
+                    y = (this.image.height - this.height);
+                }
+            }
+            this.image.crop(x, y, this.width, this.height);
             return this.image.save();
         };
         CropAction.prototype.unExecute = function () {
@@ -1881,29 +1954,57 @@ var Modules;
             this.editor = editor;
             this.images = [];
             this.fit = null;
+            this.crop = null;
         }
         CropResizeModule.prototype.init = function ($el) {
             this.view = this.editor.UI().getView();
             this.$el = $el;
             this.update();
         };
-        CropResizeModule.prototype.update = function () {
-            var _this = this;
+        CropResizeModule.prototype.deleteHelpers = function () {
             if (this.fit != null) {
                 this.fit.destroy();
                 this.fit = null;
             }
+            if (this.crop != null) {
+                this.crop.destroy();
+                this.crop = null;
+            }
+        };
+        CropResizeModule.prototype.initFit = function () {
+            var _this = this;
+            this.fit = new Modules.Fit(this.$el, this.images, this.editor.UI());
+            this.fit.on('apply', function (e) {
+                _this.doAction(_this.createFitActions(e.data.rect, e.data.method, e.data.fitPosition, e.data.isCanCrop));
+            });
+        };
+        CropResizeModule.prototype.initCrop = function () {
+            var _this = this;
+            this.crop = new Modules.Crop(this.$el, this.images, this.editor.UI());
+            this.crop.on('apply', function (e) {
+                _this.doAction(_this.createCropActions(e.data.size, e.data.fitPosition));
+            });
+        };
+        CropResizeModule.prototype.update = function () {
+            this.deleteHelpers();
             this.images = this.editor.UI().selected();
             if (this.images.length > 0) {
                 this.$el.show();
-                this.fit = new Modules.Fit(this.$el, this.images, this.editor.UI());
-                this.fit.on('apply', function (e) {
-                    _this.doAction(_this.createFitActions(e.data.rect, e.data.method, e.data.fitPosition, e.data.isCanCrop));
-                });
+                this.initFit();
+                this.initCrop();
             }
             else {
                 this.$el.hide();
             }
+        };
+        CropResizeModule.prototype.createCropActions = function (size, position) {
+            this.editor.UI().getView().showLoading();
+            var result = [];
+            this.editor.UI().selected().forEach(function (img) {
+                var act = new Modules.CropAction(img, 0, 0, size.width, size.height, position);
+                result.push(img.getActionDispatcher().process(act));
+            });
+            return result;
         };
         CropResizeModule.prototype.createFitActions = function (rect, method, position, isCanCrop) {
             this.editor.UI().getView().showLoading();
@@ -1945,10 +2046,7 @@ var Modules;
             return 'crop-resize';
         };
         CropResizeModule.prototype.deinit = function () {
-            if (this.fit != null) {
-                this.fit.destroy();
-                this.fit = null;
-            }
+            this.deleteHelpers();
             this.editor.UI().clearPopover();
         };
         return CropResizeModule;
@@ -1956,7 +2054,7 @@ var Modules;
     Modules.CropResizeModule = CropResizeModule;
 })(Modules || (Modules = {}));
 /// <reference path="../../Core/Image/RsImage.ts"/>
-/// <reference path="../../Core/Action/EditorAction.ts"/>
+/// <reference path="../../Core/Action/ImageAction.ts"/>
 var Modules;
 (function (Modules) {
     var FitAction = (function () {
@@ -1966,6 +2064,7 @@ var Modules;
             this.method = method;
             this.position = position;
             this.isCanCrop = isCanCrop;
+            this.needRender = false;
             this.isCropped = false;
             if (method == 0 /* RESIZE */) {
                 this.size = Modules.SizeCalculation.getFitSize(rect.width, rect.height, this.image.width, this.image.height);
@@ -2035,6 +2134,95 @@ var Modules;
         return FitAction;
     })();
     Modules.FitAction = FitAction;
+})(Modules || (Modules = {}));
+var Modules;
+(function (Modules) {
+    var Crop = (function (_super) {
+        __extends(Crop, _super);
+        function Crop($el, images, ui) {
+            var _this = this;
+            _super.call(this);
+            this.$el = $el;
+            this.images = images;
+            this.ui = ui;
+            this.$widthInput = $el.find('.crop__width input');
+            this.$heightInput = $el.find('.crop__height input');
+            this.$widthInput.val(this.images[0].width.toString());
+            this.$heightInput.val(this.images[0].height.toString());
+            this.$position = $el.find('#cropPosition .fp');
+            this.$button = $el.find('#cropButton');
+            this.$button.on('click.CropResize', function () {
+                if (_this.isSizeValid(_this.getRectSize())) {
+                    _this.trigger('apply', {
+                        fitPosition: _this.getPosition(),
+                        size: _this.getRectSize()
+                    });
+                }
+                return false;
+            });
+            this.$position.on('click.CropResize', function (e) {
+                _this.$position.removeClass('selected');
+                _this.selectPosition($(e.target));
+            });
+            this.$widthInput.on('input.CropResize', function (e) {
+            });
+            this.$heightInput.on('input.CropResize', function (e) {
+            });
+        }
+        Crop.prototype.isSizeValid = function (size) {
+            return !(((size.width < 30) && (size.width > 9999)) || ((size.height < 30) && (size.height > 9999)));
+        };
+        Crop.prototype.selectPosition = function ($el) {
+            $el.addClass('selected');
+        };
+        Crop.prototype.getPosition = function () {
+            var $selected = this.$position.filter('.selected');
+            if ($selected) {
+                if ($selected.hasClass('fp-left-top')) {
+                    return 0 /* LEFT_TOP */;
+                }
+                else if ($selected.hasClass('fp-top')) {
+                    return 1 /* TOP */;
+                }
+                else if ($selected.hasClass('fp-right-top')) {
+                    return 2 /* RIGHT_TOP */;
+                }
+                else if ($selected.hasClass('fp-left')) {
+                    return 3 /* LEFT */;
+                }
+                else if ($selected.hasClass('fp-center')) {
+                    return 4 /* CENTER */;
+                }
+                else if ($selected.hasClass('fp-right')) {
+                    return 5 /* RIGHT */;
+                }
+                else if ($selected.hasClass('fp-left-bottom')) {
+                    return 6 /* LEFT_BOTTOM */;
+                }
+                else if ($selected.hasClass('fp-bottom')) {
+                    return 7 /* BOTTOM */;
+                }
+                else if ($selected.hasClass('fp-right-bottom')) {
+                    return 8 /* RIGHT_BOTTOM */;
+                }
+            }
+            return null;
+        };
+        Crop.prototype.getRectSize = function () {
+            return {
+                width: parseInt(this.$widthInput.val()),
+                height: parseInt(this.$heightInput.val())
+            };
+        };
+        Crop.prototype.destroy = function () {
+            this.$button.off('.CropResize');
+            this.$position.off('.CropResize');
+            this.$widthInput.off('.CropResize');
+            this.$heightInput.off('.CropResize');
+        };
+        return Crop;
+    })(UI.Widgets.RsWidget);
+    Modules.Crop = Crop;
 })(Modules || (Modules = {}));
 var Modules;
 (function (Modules) {
@@ -2358,7 +2546,78 @@ var Modules;
     Modules.SizeCalculation = SizeCalculation;
 })(Modules || (Modules = {}));
 /// <reference path="../../Core/Image/RsImage.ts"/>
-/// <reference path="../../Core/Action/EditorAction.ts"/>
+/// <reference path="../../Core/Image/ImageResizer.ts"/>
+/// <reference path="../../Core/Action/ImageAction.ts"/>
+var Modules;
+(function (Modules) {
+    var RemoveAction = (function () {
+        function RemoveAction(image) {
+            this.image = image;
+            this.needRender = true;
+        }
+        RemoveAction.prototype.execute = function () {
+            this.image.isDeleted = true;
+            return Promise.resolve(this.image);
+        };
+        RemoveAction.prototype.unExecute = function () {
+            this.image.isDeleted = false;
+            return Promise.resolve(this.image);
+        };
+        return RemoveAction;
+    })();
+    Modules.RemoveAction = RemoveAction;
+})(Modules || (Modules = {}));
+/// <reference path="../Image/RsImage.ts"/>
+/// <reference path="../../Core/Module/ActionModule.ts"/>
+/// <reference path="../../Core/RsImageEditor.ts"/>
+/// <reference path="../../UI/Widgets/RsSlider.ts"/>
+var Modules;
+(function (Modules) {
+    var RemoveModule = (function () {
+        function RemoveModule(editor) {
+            this.editor = editor;
+        }
+        RemoveModule.prototype.process = function () {
+            this.editor.UI().selected().forEach(function (img) {
+                var act = new Modules.RemoveAction(img);
+                img.getActionDispatcher().process(act);
+            });
+            if (this.editor.UI().getType() == 1 /* GRID */) {
+                this.editor.UI().getView().render();
+            }
+            else {
+                this.editor.UI().back();
+            }
+        };
+        RemoveModule.prototype.viewType = function () {
+            return 2 /* ANY */;
+        };
+        RemoveModule.prototype.unSelectImage = function (image) {
+        };
+        RemoveModule.prototype.selectImage = function (image) {
+        };
+        RemoveModule.prototype.init = function ($el) {
+        };
+        RemoveModule.prototype.deinit = function () {
+        };
+        RemoveModule.prototype.icon = function () {
+            return 'fa fa-remove';
+        };
+        RemoveModule.prototype.type = function () {
+            return 0 /* ACTION */;
+        };
+        RemoveModule.prototype.parent = function () {
+            return null;
+        };
+        RemoveModule.prototype.name = function () {
+            return 'remove';
+        };
+        return RemoveModule;
+    })();
+    Modules.RemoveModule = RemoveModule;
+})(Modules || (Modules = {}));
+/// <reference path="../../Core/Image/RsImage.ts"/>
+/// <reference path="../../Core/Action/ImageAction.ts"/>
 var Modules;
 (function (Modules) {
     var ResizeAction = (function () {
@@ -2366,6 +2625,7 @@ var Modules;
             this.image = image;
             this.width = width;
             this.height = height;
+            this.needRender = true;
         }
         ResizeAction.prototype.execute = function () {
             this.oldWidth = this.image.getWidth();
