@@ -5,6 +5,9 @@
 /// <reference path="Module/ModuleInitialization.ts"/>
 /// <reference path="Widgets/RsProgressBar.ts"/>
 
+/// <reference path="EditorView.ts"/>
+/// <reference path="EditorActions.ts"/>
+
 module UI {
     export class Editor {
         private page: Page = null;
@@ -12,14 +15,10 @@ module UI {
         private gridPage = null;
         private singlePage = null;
 
-        private $imagePlace: JQuery;
-        private $toolbarPlace: JQuery;
-        private $popOver: JQuery;
-        private $informationPlace: JQuery;
-
-        private progressBar: Widgets.RsProgressBar;
-
         private activeModule: Core.EditorModule = null;
+
+        private editorView: EditorView;
+        private editorAction: EditorActions;
 
         constructor(private $el: JQuery, private editor: Core.RsImageEditor, private images: Core.ImageCollection)
         {
@@ -54,42 +53,36 @@ module UI {
                 this.selectImage($(e.target).closest('.rs-image'));
             });
 
-            this.$toolbarPlace = this.$el.find('#rsToolbarPlace');
-            this.$popOver = this.$el.find('#rsPopover');
-            this.$imagePlace = this.$el.find('#rsImagePlace');
-            this.$informationPlace = this.$el.find('#rsInformation');
-
-            this.progressBar = new UI.Widgets.RsProgressBar(this.$el.find('#rsProgressBar'));
-            this.progressBar.on('stop', (e) => {
-                this.progressBar.stop('Loading complete!');
-            });
+            this.editorView = new EditorView($el);
+            this.editorAction = new EditorActions(this);
 
             this.gridPage = new Page(this, this.images);
             this.singlePage = new Page(this, this.images, this.gridPage);
         }
 
-
-        showLoader(opCount: number) {
-            this.progressBar.start('Loading image...', opCount);
+        getInterface(): EditorView {
+            return this.editorView;
         }
 
-        progressLoader(op: number) {
-            this.progressBar.setProgress(op, 'Image ' + op + ' from ' + this.progressBar.getOpCount());
+        getActions(): EditorActions {
+            return this.editorAction;
         }
-
 
         initModule($button: JQuery, editorModule: Core.EditorModule) {
-            ModuleInitialization.init($button, editorModule, this.editor);
+            ModuleInitialization.init($button, editorModule, this);
         }
 
-        getActiveModule(): Core.EditorModule {
-            return this.activeModule;
+        getActiveModule(): Promise<Core.EditorModule> {
+            if (this.activeModule) {
+                return Promise.resolve(this.activeModule);
+            }
+
+            return Promise.reject(null);
         }
 
         setActiveModule(editorModule: Core.EditorModule) {
             this.activeModule = editorModule;
         }
-
 
         initToolbar($toolbar: JQuery) {
             if (this.activeModule != null) {
@@ -97,13 +90,13 @@ module UI {
             }
 
             $toolbar.find('#t-button__redo').click(() => {
-                this.redo();
+                this.editorAction.redo();
 
                 return false;
             });
 
             $toolbar.find('#t-button__undo').click(() => {
-                this.undo();
+                this.editorAction.undo();
 
                 return false;
             });
@@ -113,66 +106,6 @@ module UI {
             return this.getPage().getView();
         }
 
-        redo() {
-            var p = [];
-            this.getView().showLoading();
-
-            this.getView().getActualImage().forEach((img) => {
-                var act = img.getActionDispatcher().getRedoAction();
-                if ((act) && (act.needRender)) {
-                    this.getView().needRefresh = true;
-                }
-
-                p.push(img.getActionDispatcher().redo());
-            });
-
-            Promise.all(p).then(() => {
-                this.getView().update();
-
-                if (this.activeModule) {
-                    if ((this.activeModule.viewType() == this.getType()) || (this.activeModule.viewType() == Core.ModuleViewType.ANY)) {
-                        this.activeModule.selectImage(null);
-                    }
-                }
-            });
-        }
-
-        undo() {
-            var p = [];
-            this.getView().showLoading();
-
-            this.getView().getActualImage().forEach((img) => {
-                var act = img.getActionDispatcher().getUndoAction();
-
-                if ((act) && (act.needRender)) {
-                    this.getView().needRefresh = true;
-                }
-
-                p.push(img.getActionDispatcher().undo());
-            });
-
-            Promise.all(p).then(() => {
-                this.getView().update();
-
-                if (this.activeModule) {
-                    if ((this.activeModule.viewType() == this.getType()) || (this.activeModule.viewType() == Core.ModuleViewType.ANY)) {
-                        this.activeModule.selectImage(null);
-                    }
-                }
-            });
-        }
-
-        showPopover(content: string): JQuery {
-            this.$popOver.html(content);
-            this.$popOver.show();
-
-            return this.$popOver;
-        }
-
-        clearPopover() {
-            this.$popOver.html("");
-            this.$popOver.hide();
-        }
 
         back() {
             if (this.page.hasParent()) {
@@ -182,17 +115,6 @@ module UI {
             }
         }
 
-        getImagePlace(): JQuery {
-            return this.$imagePlace;
-        }
-
-        getToolbarPlace(): JQuery {
-            return this.$toolbarPlace;
-        }
-
-        getInformationPlace(): JQuery {
-            return this.$informationPlace;
-        }
 
         /**
          * Get selected image in editor
@@ -224,17 +146,17 @@ module UI {
         }
 
         render() {
-            if (this.activeModule != null) {
-                this.activeModule.deinit();
-            }
+            this.getActiveModule().then((m) => {
+                m.deinit();
+            });
 
             this.getPage().render();
 
-            if (this.activeModule != null) {
-                if ((this.activeModule.viewType() == this.getType()) || (this.activeModule.viewType() == Core.ModuleViewType.ANY)) {
-                    ModuleInitialization.renderModule(this.activeModule, this.editor);
+            this.getActiveModule().then((m) => {
+                if ((m.viewType() == this.getType()) || (m.viewType() == Core.ModuleViewType.ANY)) {
+                    ModuleInitialization.renderModule(m, this);
                 }
-            }
+            });
         }
 
         appendImage(image: Core.RsImage) {
@@ -269,20 +191,20 @@ module UI {
             if ($el.hasClass('rs-image-selected')) {
                 $el.removeClass('rs-image-selected');
 
-                if (this.activeModule) {
-                    if ((this.activeModule.viewType() == this.getType()) || (this.activeModule.viewType() == Core.ModuleViewType.ANY)) {
-                        this.activeModule.unSelectImage(image);
+                this.getActiveModule().then((m) => {
+                    if ((m.viewType() == this.getType()) || (m.viewType() == Core.ModuleViewType.ANY)) {
+                        m.unSelectImage(image);
                     }
-                }
+                });
             }
             else {
                 $el.addClass('rs-image-selected');
 
-                if (this.activeModule) {
-                    if ((this.activeModule.viewType() == this.getType()) || (this.activeModule.viewType() == Core.ModuleViewType.ANY)) {
-                        this.activeModule.selectImage(image);
+                this.getActiveModule().then((m) => {
+                    if ((m.viewType() == this.getType()) || (m.viewType() == Core.ModuleViewType.ANY)) {
+                        m.selectImage(image);
                     }
-                }
+                });
             }
         }
     }

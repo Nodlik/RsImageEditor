@@ -13,7 +13,7 @@ module Core {
             var i = 0;
             this.total = 0;
 
-            this.editor.UI().showLoader(files.length);
+            this.editor.UI().getInterface().showProgressBar(files.length);
 
             var p = new Promise<number>(
                 (resolve, reject) => {
@@ -56,7 +56,7 @@ module Core {
                     this.editor.appendImage(image);
 
                     this.total++;
-                    this.editor.UI().progressLoader(this.total);
+                    this.editor.UI().getInterface().progress(this.total);
 
 
                     if (isLast) {

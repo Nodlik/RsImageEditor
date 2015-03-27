@@ -53,10 +53,10 @@ module UI {
 
         getToolbar(): Toolbar {
             if (this.imageCollection.getImages().length == 1) {
-                return new SingleToolbar(this, this.editor.getEditor());
+                return new SingleToolbar(this, this.editor);
             }
 
-            return new GridToolbar(this, this.editor.getEditor());
+            return new GridToolbar(this, this.editor);
         }
 
         renderInformation() {
@@ -80,11 +80,11 @@ module UI {
         }
 
         getImagePlace(): JQuery {
-            return this.editor.getImagePlace();
+            return this.editor.getInterface().getImagePlace();
         }
 
         getInformationPlace(): JQuery {
-            return this.editor.getInformationPlace();
+            return this.editor.getInterface().getInformationPlace();
         }
     }
 }

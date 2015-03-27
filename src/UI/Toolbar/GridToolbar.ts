@@ -1,6 +1,6 @@
 module UI {
     export class GridToolbar extends Toolbar {
-        constructor(page: Page, editor: Core.RsImageEditor) {
+        constructor(page: Page, editor: UI.Editor) {
             super(page, editor);
         }
 
@@ -9,7 +9,7 @@ module UI {
 
             this.renderModuleToolbar(Core.ModuleViewType.GRID, this.$toolbar);
 
-            this.editor.UI().initToolbar(this.$toolbar);
+            this.editor.initToolbar(this.$toolbar);
         }
     }
 }

@@ -2,8 +2,8 @@ module UI {
     export class Toolbar {
         $toolbar: JQuery;
 
-        constructor(private page: Page, public editor: Core.RsImageEditor) {
-            this.$toolbar = this.editor.UI().getToolbarPlace();
+        constructor(private page: Page, public editor: UI.Editor) {
+            this.$toolbar = this.editor.getInterface().getToolbarPlace();
         }
 
         render() {
@@ -16,7 +16,7 @@ module UI {
         }
 
         renderModuleToolbar(type: Core.ModuleViewType, $el: JQuery) {
-            var modules = this.editor.getModuleManager().getModules( this.editor.UI().getType(), null );
+            var modules = this.editor.getEditor().getModuleManager().getModules( this.editor.getType(), null );
 
             modules.forEach((m: Core.EditorModule) =>
                 {
@@ -30,7 +30,7 @@ module UI {
 
                     $el.append($button);
 
-                    this.editor.UI().initModule($button, m);
+                    this.editor.initModule($button, m);
                 }
             )
         }

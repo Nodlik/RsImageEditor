@@ -699,7 +699,7 @@ var UI;
         function Toolbar(page, editor) {
             this.page = page;
             this.editor = editor;
-            this.$toolbar = this.editor.UI().getToolbarPlace();
+            this.$toolbar = this.editor.getInterface().getToolbarPlace();
         }
         Toolbar.prototype.render = function () {
             this.$toolbar.html("");
@@ -710,7 +710,7 @@ var UI;
         };
         Toolbar.prototype.renderModuleToolbar = function (type, $el) {
             var _this = this;
-            var modules = this.editor.getModuleManager().getModules(this.editor.UI().getType(), null);
+            var modules = this.editor.getEditor().getModuleManager().getModules(this.editor.getType(), null);
             modules.forEach(function (m) {
                 var $button = $(nunjucks.render('toolbar.button.html.njs', {
                     button: {
@@ -720,7 +720,7 @@ var UI;
                     }
                 }));
                 $el.append($button);
-                _this.editor.UI().initModule($button, m);
+                _this.editor.initModule($button, m);
             });
         };
         Toolbar.prototype.renderCommonButton = function ($el) {
@@ -775,7 +775,7 @@ var UI;
         GridToolbar.prototype.render = function () {
             _super.prototype.render.call(this);
             this.renderModuleToolbar(1 /* GRID */, this.$toolbar);
-            this.editor.UI().initToolbar(this.$toolbar);
+            this.editor.initToolbar(this.$toolbar);
         };
         return GridToolbar;
     })(UI.Toolbar);
@@ -791,7 +791,7 @@ var UI;
         SingleToolbar.prototype.render = function () {
             _super.prototype.render.call(this);
             this.renderModuleToolbar(0 /* SINGLE */, this.$toolbar);
-            this.editor.UI().initToolbar(this.$toolbar);
+            this.editor.initToolbar(this.$toolbar);
         };
         return SingleToolbar;
     })(UI.Toolbar);
@@ -843,9 +843,9 @@ var UI;
         };
         Page.prototype.getToolbar = function () {
             if (this.imageCollection.getImages().length == 1) {
-                return new UI.SingleToolbar(this, this.editor.getEditor());
+                return new UI.SingleToolbar(this, this.editor);
             }
-            return new UI.GridToolbar(this, this.editor.getEditor());
+            return new UI.GridToolbar(this, this.editor);
         };
         Page.prototype.renderInformation = function () {
             var inf = this.getView().getInformation();
@@ -864,10 +864,10 @@ var UI;
             this.getView().render();
         };
         Page.prototype.getImagePlace = function () {
-            return this.editor.getImagePlace();
+            return this.editor.getInterface().getImagePlace();
         };
         Page.prototype.getInformationPlace = function () {
-            return this.editor.getInformationPlace();
+            return this.editor.getInterface().getInformationPlace();
         };
         return Page;
     })();
@@ -904,11 +904,11 @@ var UI;
             });
         };
         ModuleInitialization.renderModule = function (editorModule, editor) {
-            if (editor.UI().getActiveModule() != null) {
-                editor.UI().getActiveModule().deinit();
-            }
-            editorModule.init(editor.UI().showPopover(editorModule.html()));
-            editor.UI().setActiveModule(editorModule);
+            editor.getActiveModule().then(function (m) {
+                m.deinit();
+            });
+            editorModule.init(editor.getInterface().showPopover(editorModule.html()));
+            editor.setActiveModule(editorModule);
             return false;
         };
         return ModuleInitialization;
@@ -1014,6 +1014,107 @@ var UI;
 /// <reference path="Widgets/RsProgressBar.ts"/>
 var UI;
 (function (UI) {
+    var EditorView = (function () {
+        function EditorView($el) {
+            var _this = this;
+            this.$el = $el;
+            this.$popOver = this.$el.find('#rsPopover');
+            this.$toolbarPlace = this.$el.find('#rsToolbarPlace');
+            this.$imagePlace = this.$el.find('#rsImagePlace');
+            this.$informationPlace = this.$el.find('#rsInformation');
+            this.progressBar = new UI.Widgets.RsProgressBar(this.$el.find('#rsProgressBar'));
+            this.progressBar.on('stop', function (e) {
+                _this.progressBar.stop('Loading complete!');
+            });
+        }
+        EditorView.prototype.showProgressBar = function (opCount) {
+            this.progressBar.start('Loading image...', opCount);
+        };
+        EditorView.prototype.progress = function (op) {
+            this.progressBar.setProgress(op, 'Image ' + op + ' from ' + this.progressBar.getOpCount());
+        };
+        EditorView.prototype.showPopover = function (content) {
+            this.$popOver.html(content);
+            this.$popOver.show();
+            return this.$popOver;
+        };
+        EditorView.prototype.clearPopover = function () {
+            this.$popOver.html("");
+            this.$popOver.hide();
+        };
+        EditorView.prototype.getImagePlace = function () {
+            return this.$imagePlace;
+        };
+        EditorView.prototype.getToolbarPlace = function () {
+            return this.$toolbarPlace;
+        };
+        EditorView.prototype.getInformationPlace = function () {
+            return this.$informationPlace;
+        };
+        return EditorView;
+    })();
+    UI.EditorView = EditorView;
+})(UI || (UI = {}));
+/// <reference path="../Core/RsImageEditor.ts"/>
+/// <reference path="../Core/Image/ImageCollection.ts"/>
+/// <reference path="../Core/Image/RsImage.ts"/>
+/// <reference path="Page.ts"/>
+/// <reference path="Module/ModuleInitialization.ts"/>
+/// <reference path="Widgets/RsProgressBar.ts"/>
+var UI;
+(function (UI) {
+    var EditorActions = (function () {
+        function EditorActions(controller) {
+            this.controller = controller;
+        }
+        EditorActions.prototype.imageUndo = function () {
+        };
+        EditorActions.prototype.imageRedo = function () {
+        };
+        EditorActions.prototype.redo = function () {
+            this.imageHistoryAction('Redo');
+        };
+        EditorActions.prototype.undo = function () {
+            this.imageHistoryAction('Undo');
+        };
+        EditorActions.prototype.getView = function () {
+            return this.controller.getView();
+        };
+        EditorActions.prototype.imageHistoryAction = function (action) {
+            var _this = this;
+            var p = [];
+            this.getView().showLoading();
+            this.getView().getActualImage().forEach(function (img) {
+                var act = img.getActionDispatcher()['get' + action + 'Action']();
+                if ((act) && (act.needRender)) {
+                    _this.getView().needRefresh = true;
+                }
+                p.push(img.getActionDispatcher()[action.toLowerCase()]());
+            });
+            Promise.all(p).then(function () {
+                _this.getView().update();
+                /*
+                                if (this.activeModule) {
+                                    if ((this.activeModule.viewType() == this.getType()) || (this.activeModule.viewType() == Core.ModuleViewType.ANY)) {
+                                        this.activeModule.selectImage(null);
+                                    }
+                                }*/
+            });
+        };
+        return EditorActions;
+    })();
+    UI.EditorActions = EditorActions;
+})(UI || (UI = {}));
+/// <reference path="../Core/RsImageEditor.ts"/>
+/// <reference path="../Core/Image/ImageCollection.ts"/>
+/// <reference path="../Core/Image/RsImage.ts"/>
+/// <reference path="Page.ts"/>
+/// <reference path="Module/ModuleInitialization.ts"/>
+/// <reference path="Widgets/RsProgressBar.ts"/>
+/// <reference path="EditorView.ts"/>
+/// <reference path="EditorActions.ts"/>
+var UI;
+(function (UI) {
     var Editor = (function () {
         function Editor($el, editor, images) {
             var _this = this;
@@ -1043,28 +1144,25 @@ var UI;
             this.$el.on('click', '.rs-image-selection-checkbox', function (e) {
                 _this.selectImage($(e.target).closest('.rs-image'));
             });
-            this.$toolbarPlace = this.$el.find('#rsToolbarPlace');
-            this.$popOver = this.$el.find('#rsPopover');
-            this.$imagePlace = this.$el.find('#rsImagePlace');
-            this.$informationPlace = this.$el.find('#rsInformation');
-            this.progressBar = new UI.Widgets.RsProgressBar(this.$el.find('#rsProgressBar'));
-            this.progressBar.on('stop', function (e) {
-                _this.progressBar.stop('Loading complete!');
-            });
+            this.editorView = new UI.EditorView($el);
+            this.editorAction = new UI.EditorActions(this);
             this.gridPage = new UI.Page(this, this.images);
             this.singlePage = new UI.Page(this, this.images, this.gridPage);
         }
-        Editor.prototype.showLoader = function (opCount) {
-            this.progressBar.start('Loading image...', opCount);
+        Editor.prototype.getInterface = function () {
+            return this.editorView;
         };
-        Editor.prototype.progressLoader = function (op) {
-            this.progressBar.setProgress(op, 'Image ' + op + ' from ' + this.progressBar.getOpCount());
+        Editor.prototype.getActions = function () {
+            return this.editorAction;
         };
         Editor.prototype.initModule = function ($button, editorModule) {
-            UI.ModuleInitialization.init($button, editorModule, this.editor);
+            UI.ModuleInitialization.init($button, editorModule, this);
         };
         Editor.prototype.getActiveModule = function () {
-            return this.activeModule;
+            if (this.activeModule) {
+                return Promise.resolve(this.activeModule);
+            }
+            return Promise.reject(null);
         };
         Editor.prototype.setActiveModule = function (editorModule) {
             this.activeModule = editorModule;
@@ -1075,80 +1173,22 @@ var UI;
                 $toolbar.find('#t-button__' + this.activeModule.name()).addClass('active');
             }
             $toolbar.find('#t-button__redo').click(function () {
-                _this.redo();
+                _this.editorAction.redo();
                 return false;
             });
             $toolbar.find('#t-button__undo').click(function () {
-                _this.undo();
+                _this.editorAction.undo();
                 return false;
             });
         };
         Editor.prototype.getView = function () {
             return this.getPage().getView();
         };
-        Editor.prototype.redo = function () {
-            var _this = this;
-            var p = [];
-            this.getView().showLoading();
-            this.getView().getActualImage().forEach(function (img) {
-                var act = img.getActionDispatcher().getRedoAction();
-                if ((act) && (act.needRender)) {
-                    _this.getView().needRefresh = true;
-                }
-                p.push(img.getActionDispatcher().redo());
-            });
-            Promise.all(p).then(function () {
-                _this.getView().update();
-                if (_this.activeModule) {
-                    if ((_this.activeModule.viewType() == _this.getType()) || (_this.activeModule.viewType() == 2 /* ANY */)) {
-                        _this.activeModule.selectImage(null);
-                    }
-                }
-            });
-        };
-        Editor.prototype.undo = function () {
-            var _this = this;
-            var p = [];
-            this.getView().showLoading();
-            this.getView().getActualImage().forEach(function (img) {
-                var act = img.getActionDispatcher().getUndoAction();
-                if ((act) && (act.needRender)) {
-                    _this.getView().needRefresh = true;
-                }
-                p.push(img.getActionDispatcher().undo());
-            });
-            Promise.all(p).then(function () {
-                _this.getView().update();
-                if (_this.activeModule) {
-                    if ((_this.activeModule.viewType() == _this.getType()) || (_this.activeModule.viewType() == 2 /* ANY */)) {
-                        _this.activeModule.selectImage(null);
-                    }
-                }
-            });
-        };
-        Editor.prototype.showPopover = function (content) {
-            this.$popOver.html(content);
-            this.$popOver.show();
-            return this.$popOver;
-        };
-        Editor.prototype.clearPopover = function () {
-            this.$popOver.html("");
-            this.$popOver.hide();
-        };
         Editor.prototype.back = function () {
             if (this.page.hasParent()) {
                 this.page = this.page.getParent();
                 this.render();
             }
-        };
-        Editor.prototype.getImagePlace = function () {
-            return this.$imagePlace;
-        };
-        Editor.prototype.getToolbarPlace = function () {
-            return this.$toolbarPlace;
-        };
-        Editor.prototype.getInformationPlace = function () {
-            return this.$informationPlace;
         };
         /**
          * Get selected image in editor
@@ -1175,15 +1215,16 @@ var UI;
             return this.getPage().getView().type();
         };
         Editor.prototype.render = function () {
-            if (this.activeModule != null) {
-                this.activeModule.deinit();
-            }
+            var _this = this;
+            this.getActiveModule().then(function (m) {
+                m.deinit();
+            });
             this.getPage().render();
-            if (this.activeModule != null) {
-                if ((this.activeModule.viewType() == this.getType()) || (this.activeModule.viewType() == 2 /* ANY */)) {
-                    UI.ModuleInitialization.renderModule(this.activeModule, this.editor);
+            this.getActiveModule().then(function (m) {
+                if ((m.viewType() == _this.getType()) || (m.viewType() == 2 /* ANY */)) {
+                    UI.ModuleInitialization.renderModule(m, _this);
                 }
-            }
+            });
         };
         Editor.prototype.appendImage = function (image) {
             this.gridPage.appendImage(image);
@@ -1207,22 +1248,23 @@ var UI;
             this.render();
         };
         Editor.prototype.selectImage = function ($el) {
+            var _this = this;
             var image = this.images.getImage($el.data('id')).getImages()[0];
             if ($el.hasClass('rs-image-selected')) {
                 $el.removeClass('rs-image-selected');
-                if (this.activeModule) {
-                    if ((this.activeModule.viewType() == this.getType()) || (this.activeModule.viewType() == 2 /* ANY */)) {
-                        this.activeModule.unSelectImage(image);
+                this.getActiveModule().then(function (m) {
+                    if ((m.viewType() == _this.getType()) || (m.viewType() == 2 /* ANY */)) {
+                        m.unSelectImage(image);
                     }
-                }
+                });
             }
             else {
                 $el.addClass('rs-image-selected');
-                if (this.activeModule) {
-                    if ((this.activeModule.viewType() == this.getType()) || (this.activeModule.viewType() == 2 /* ANY */)) {
-                        this.activeModule.selectImage(image);
+                this.getActiveModule().then(function (m) {
+                    if ((m.viewType() == _this.getType()) || (m.viewType() == 2 /* ANY */)) {
+                        m.selectImage(image);
                     }
-                }
+                });
             }
         };
         return Editor;
@@ -1242,11 +1284,11 @@ var Core;
         function ModuleManager(editor) {
             this.editor = editor;
             this.modules = {};
-            this.registerModule('resize', new Modules.ResizeModule(this.editor), 0 /* SINGLE */);
-            this.registerModule('color', new Modules.ColorModule(this.editor), 2 /* ANY */);
-            this.registerModule('crop', new Modules.CropModule(this.editor), 0 /* SINGLE */);
-            this.registerModule('crop-resize', new Modules.CropResizeModule(this.editor), 1 /* GRID */);
-            this.registerModule('remove', new Modules.RemoveModule(this.editor), 2 /* ANY */);
+            this.registerModule('resize', new Modules.ResizeModule(this.editor.UI()), 0 /* SINGLE */);
+            this.registerModule('color', new Modules.ColorModule(this.editor.UI()), 2 /* ANY */);
+            this.registerModule('crop', new Modules.CropModule(this.editor.UI()), 0 /* SINGLE */);
+            this.registerModule('crop-resize', new Modules.CropResizeModule(this.editor.UI()), 1 /* GRID */);
+            this.registerModule('remove', new Modules.RemoveModule(this.editor.UI()), 2 /* ANY */);
         }
         ModuleManager.prototype.registerModule = function (name, editorModule, type) {
             if (!(name in this.modules)) {
@@ -1294,7 +1336,7 @@ var Core;
             var _this = this;
             var i = 0;
             this.total = 0;
-            this.editor.UI().showLoader(files.length);
+            this.editor.UI().getInterface().showProgressBar(files.length);
             var p = new Promise(function (resolve, reject) {
                 var intervalId = setInterval(function () {
                     if (i < files.length) {
@@ -1325,7 +1367,7 @@ var Core;
                 img.create(e.target.result).then(function (image) {
                     _this.editor.appendImage(image);
                     _this.total++;
-                    _this.editor.UI().progressLoader(_this.total);
+                    _this.editor.UI().getInterface().progress(_this.total);
                     if (isLast) {
                         resolve(1);
                     }
@@ -1443,6 +1485,7 @@ var UI;
 /// <reference path="../../Core/Module/HtmlModule.ts"/>
 /// <reference path="../../Core/RsImageEditor.ts"/>
 /// <reference path="../../UI/Widgets/RsSlider.ts"/>
+/// <reference path="../../UI/Editor.ts"/>
 var Modules;
 (function (Modules) {
     var ColorModule = (function () {
@@ -1462,7 +1505,7 @@ var Modules;
             this.updateSelectState();
         };
         ColorModule.prototype.updateSelectState = function () {
-            var images = this.editor.UI().selected();
+            var images = this.editor.selected();
             if (images.length == 1) {
                 var image = images[0];
                 this.brightnessSlider.set(image.brightness);
@@ -1491,8 +1534,8 @@ var Modules;
             var _this = this;
             var brightness = 0;
             var vibrance = 0;
-            if (this.editor.UI().getType() == 0 /* SINGLE */) {
-                var img = this.editor.UI().selected()[0];
+            if (this.editor.getType() == 0 /* SINGLE */) {
+                var img = this.editor.selected()[0];
                 brightness = img.brightness;
                 vibrance = img.vibrance;
             }
@@ -1506,7 +1549,7 @@ var Modules;
             });
         };
         ColorModule.prototype.deinit = function () {
-            this.editor.UI().clearPopover();
+            this.editor.getInterface().clearPopover();
         };
         ColorModule.prototype.icon = function () {
             return 'fa fa-image';
@@ -1522,14 +1565,14 @@ var Modules;
         };
         ColorModule.prototype.doAction = function (action, value) {
             var _this = this;
-            this.editor.UI().getView().showLoading();
+            this.editor.getView().showLoading();
             var promiseArray = [];
-            this.editor.UI().selected().forEach(function (img) {
+            this.editor.selected().forEach(function (img) {
                 var act = new action(img, value);
                 promiseArray.push(img.getActionDispatcher().process(act));
             });
             Promise.all(promiseArray).then(function () {
-                _this.editor.UI().getView().update();
+                _this.editor.getView().update();
             });
         };
         return ColorModule;
@@ -1897,7 +1940,7 @@ var Modules;
         CropModule.prototype.unSelectImage = function (image) {
         };
         CropModule.prototype.deinit = function () {
-            this.editor.UI().clearPopover();
+            this.editor.getInterface().clearPopover();
             if (this.view != null) {
                 this.$cropRect.remove();
                 this.view.getAreaElement().find('.rs-resizable-item').remove();
@@ -1908,7 +1951,7 @@ var Modules;
         };
         CropModule.prototype.init = function ($el) {
             var _this = this;
-            this.view = this.editor.UI().getView();
+            this.view = this.editor.getView();
             this.$cropRect = $('<div class="crop-rect"></div>');
             this.view.getAreaElement().append(this.$cropRect);
             this.cropResizableWidget = new UI.Widgets.RsResizable(this.$cropRect, this.view.getAreaElement());
@@ -1933,12 +1976,12 @@ var Modules;
         CropModule.prototype.doAction = function (left, top, width, height) {
             var _this = this;
             var promiseArray = [];
-            this.editor.UI().selected().forEach(function (img) {
+            this.editor.selected().forEach(function (img) {
                 var act = new Modules.CropAction(img, left, top, width, height);
                 promiseArray.push(img.getActionDispatcher().process(act));
             });
             Promise.all(promiseArray).then(function () {
-                _this.editor.UI().render();
+                _this.editor.render();
             });
         };
         return CropModule;
@@ -1957,7 +2000,7 @@ var Modules;
             this.crop = null;
         }
         CropResizeModule.prototype.init = function ($el) {
-            this.view = this.editor.UI().getView();
+            this.view = this.editor.getView();
             this.$el = $el;
             this.update();
         };
@@ -1973,21 +2016,21 @@ var Modules;
         };
         CropResizeModule.prototype.initFit = function () {
             var _this = this;
-            this.fit = new Modules.Fit(this.$el, this.images, this.editor.UI());
+            this.fit = new Modules.Fit(this.$el, this.images, this.editor);
             this.fit.on('apply', function (e) {
                 _this.doAction(_this.createFitActions(e.data.rect, e.data.method, e.data.fitPosition, e.data.isCanCrop));
             });
         };
         CropResizeModule.prototype.initCrop = function () {
             var _this = this;
-            this.crop = new Modules.Crop(this.$el, this.images, this.editor.UI());
+            this.crop = new Modules.Crop(this.$el, this.images, this.editor);
             this.crop.on('apply', function (e) {
                 _this.doAction(_this.createCropActions(e.data.size, e.data.fitPosition));
             });
         };
         CropResizeModule.prototype.update = function () {
             this.deleteHelpers();
-            this.images = this.editor.UI().selected();
+            this.images = this.editor.selected();
             if (this.images.length > 0) {
                 this.$el.show();
                 this.initFit();
@@ -1998,18 +2041,18 @@ var Modules;
             }
         };
         CropResizeModule.prototype.createCropActions = function (size, position) {
-            this.editor.UI().getView().showLoading();
+            this.editor.getView().showLoading();
             var result = [];
-            this.editor.UI().selected().forEach(function (img) {
+            this.editor.selected().forEach(function (img) {
                 var act = new Modules.CropAction(img, 0, 0, size.width, size.height, position);
                 result.push(img.getActionDispatcher().process(act));
             });
             return result;
         };
         CropResizeModule.prototype.createFitActions = function (rect, method, position, isCanCrop) {
-            this.editor.UI().getView().showLoading();
+            this.editor.getView().showLoading();
             var result = [];
-            this.editor.UI().selected().forEach(function (img) {
+            this.editor.selected().forEach(function (img) {
                 var act = new Modules.FitAction(img, rect, method, position, isCanCrop);
                 result.push(img.getActionDispatcher().process(act));
             });
@@ -2018,7 +2061,7 @@ var Modules;
         CropResizeModule.prototype.doAction = function (actions) {
             var _this = this;
             Promise.all(actions).then(function () {
-                _this.editor.UI().getView().update();
+                _this.editor.getView().update();
             });
         };
         CropResizeModule.prototype.html = function () {
@@ -2047,7 +2090,7 @@ var Modules;
         };
         CropResizeModule.prototype.deinit = function () {
             this.deleteHelpers();
-            this.editor.UI().clearPopover();
+            this.editor.getInterface().clearPopover();
         };
         return CropResizeModule;
     })();
@@ -2578,15 +2621,15 @@ var Modules;
             this.editor = editor;
         }
         RemoveModule.prototype.process = function () {
-            this.editor.UI().selected().forEach(function (img) {
+            this.editor.selected().forEach(function (img) {
                 var act = new Modules.RemoveAction(img);
                 img.getActionDispatcher().process(act);
             });
-            if (this.editor.UI().getType() == 1 /* GRID */) {
-                this.editor.UI().getView().render();
+            if (this.editor.getType() == 1 /* GRID */) {
+                this.editor.getView().render();
             }
             else {
-                this.editor.UI().back();
+                this.editor.back();
             }
         };
         RemoveModule.prototype.viewType = function () {
@@ -2663,14 +2706,14 @@ var Modules;
         ResizeModule.prototype.unSelectImage = function (image) {
         };
         ResizeModule.prototype.deinit = function () {
-            this.editor.UI().clearPopover();
+            this.editor.getInterface().clearPopover();
         };
         ResizeModule.prototype.viewType = function () {
             return 0 /* SINGLE */;
         };
         ResizeModule.prototype.init = function ($el) {
             var _this = this;
-            this.image = this.editor.UI().selected()[0];
+            this.image = this.editor.selected()[0];
             this.$widthInput = $el.find('.m__single-resize__val.width input');
             this.$heightInput = $el.find('.m__single-resize__val.height input');
             this.$lock = $el.find('.m__single-resize__lock');
@@ -2744,7 +2787,7 @@ var Modules;
             var _this = this;
             var act = new Modules.ResizeAction(this.image, width, height);
             this.image.getActionDispatcher().process(act).then(function () {
-                _this.editor.UI().getView().update();
+                _this.editor.getView().update();
             });
         };
         return ResizeModule;

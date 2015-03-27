@@ -5,19 +5,19 @@
 module Modules {
     export class RemoveModule implements Core.ActionModule
     {
-        constructor(private editor: Core.RsImageEditor) {}
+        constructor(private editor: UI.Editor) {}
 
         process() {
-            this.editor.UI().selected().forEach((img) => {
+            this.editor.selected().forEach((img) => {
                 var act = new RemoveAction(img);
                 img.getActionDispatcher().process(act);
             });
 
-            if (this.editor.UI().getType() == Core.ModuleViewType.GRID) {
-                this.editor.UI().getView().render();
+            if (this.editor.getType() == Core.ModuleViewType.GRID) {
+                this.editor.getView().render();
             }
             else {
-                this.editor.UI().back();
+                this.editor.back();
             }
         }
 

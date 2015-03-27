@@ -9,7 +9,7 @@ module Modules {
         private cropResizableWidget: UI.Widgets.RsResizable;
         private view: UI.SingleView = null;
 
-        constructor(private editor: Core.RsImageEditor) {}
+        constructor(private editor: UI.Editor) {}
 
         html() {
             return nunjucks.render('crop.dialog.html.njs', {});
@@ -24,7 +24,7 @@ module Modules {
         }
 
         deinit() {
-            this.editor.UI().clearPopover();
+            this.editor.getInterface().clearPopover();
 
             if (this.view != null) {
                 this.$cropRect.remove();
@@ -37,7 +37,7 @@ module Modules {
         }
 
         init($el: JQuery) {
-            this.view = <UI.SingleView>this.editor.UI().getView();
+            this.view = <UI.SingleView>this.editor.getView();
 
             this.$cropRect = $('<div class="crop-rect"></div>');
             this.view.getAreaElement().append(this.$cropRect);
@@ -73,7 +73,7 @@ module Modules {
         doAction(left: number, top: number, width: number, height: number) {
             var promiseArray: Promise<Core.RsImage>[] = [];
 
-            this.editor.UI().selected().forEach((img: Core.RsImage) =>
+            this.editor.selected().forEach((img: Core.RsImage) =>
                 {
                     var act = new CropAction(img, left, top, width, height);
                     promiseArray.push(img.getActionDispatcher().process(act));
@@ -81,7 +81,7 @@ module Modules {
             );
 
             Promise.all(promiseArray).then(() => {
-                this.editor.UI().render();
+                this.editor.render();
             });
         }
     }

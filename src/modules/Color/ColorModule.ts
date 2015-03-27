@@ -1,6 +1,7 @@
 /// <reference path="../../Core/Module/HtmlModule.ts"/>
 /// <reference path="../../Core/RsImageEditor.ts"/>
 /// <reference path="../../UI/Widgets/RsSlider.ts"/>
+/// <reference path="../../UI/Editor.ts"/>
 
 module Modules {
     export class ColorModule implements Core.HtmlModule
@@ -8,7 +9,7 @@ module Modules {
         private brightnessSlider: UI.Widgets.RsSlider;
         private vibranceSlider: UI.Widgets.RsSlider;
 
-        constructor(private editor: Core.RsImageEditor) {}
+        constructor(private editor: UI.Editor) {}
 
         html() {
             return nunjucks.render('color.dialog.html.njs', {});
@@ -27,7 +28,7 @@ module Modules {
         }
 
         private updateSelectState() {
-            var images = this.editor.UI().selected();
+            var images = this.editor.selected();
 
             if (images.length == 1) {
                 var image = images[0];
@@ -62,8 +63,8 @@ module Modules {
             var brightness = 0;
             var vibrance = 0;
 
-            if (this.editor.UI().getType() == Core.ModuleViewType.SINGLE) {
-                var img = this.editor.UI().selected()[0];
+            if (this.editor.getType() == Core.ModuleViewType.SINGLE) {
+                var img = this.editor.selected()[0];
 
                 brightness = img.brightness;
                 vibrance = img.vibrance;
@@ -81,7 +82,7 @@ module Modules {
         }
 
         deinit() {
-            this.editor.UI().clearPopover();
+            this.editor.getInterface().clearPopover();
         }
 
         icon() {
@@ -101,18 +102,18 @@ module Modules {
         }
 
         doAction(action, value: number) {
-            this.editor.UI().getView().showLoading();
+            this.editor.getView().showLoading();
 
             var promiseArray: Promise<Core.RsImage>[] = [];
 
-            this.editor.UI().selected().forEach((img: Core.RsImage) => {
+            this.editor.selected().forEach((img: Core.RsImage) => {
                     var act = new action(img, value);
                     promiseArray.push(img.getActionDispatcher().process(act));
                 }
             );
 
             Promise.all(promiseArray).then(() => {
-                this.editor.UI().getView().update();
+                this.editor.getView().update();
             });
         }
     }

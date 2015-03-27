@@ -18,10 +18,10 @@ module Modules {
         private fit: Fit = null;
         private crop: Crop = null;
 
-        constructor(private editor: Core.RsImageEditor) {}
+        constructor(private editor: UI.Editor) {}
 
         init($el: JQuery) {
-            this.view = <UI.GridView>this.editor.UI().getView();
+            this.view = <UI.GridView>this.editor.getView();
             this.$el = $el;
 
             this.update();
@@ -40,7 +40,7 @@ module Modules {
         }
 
         private initFit() {
-            this.fit = new Fit(this.$el, this.images, this.editor.UI());
+            this.fit = new Fit(this.$el, this.images, this.editor);
 
             this.fit.on('apply', (e) => {
                 this.doAction(
@@ -50,7 +50,7 @@ module Modules {
         }
 
         private initCrop() {
-            this.crop = new Crop(this.$el, this.images, this.editor.UI());
+            this.crop = new Crop(this.$el, this.images, this.editor);
 
             this.crop.on('apply', (e) => {
                 this.doAction(
@@ -62,7 +62,7 @@ module Modules {
         private update() {
             this.deleteHelpers();
 
-            this.images = this.editor.UI().selected();
+            this.images = this.editor.selected();
             if (this.images.length > 0) {
                 this.$el.show();
 
@@ -75,11 +75,11 @@ module Modules {
         }
 
         private createCropActions(size: Size, position: FitPosition): Promise<Core.RsImage>[] {
-            this.editor.UI().getView().showLoading();
+            this.editor.getView().showLoading();
 
             var result: Promise<Core.RsImage>[] = [];
 
-            this.editor.UI().selected().forEach((img: Core.RsImage) => {
+            this.editor.selected().forEach((img: Core.RsImage) => {
                     var act = new CropAction(img, 0, 0, size.width, size.height, position);
                     result.push(img.getActionDispatcher().process(act));
                 }
@@ -89,11 +89,11 @@ module Modules {
         }
 
         private createFitActions(rect: Rect, method: FitMethod, position: FitPosition, isCanCrop: boolean): Promise<Core.RsImage>[] {
-            this.editor.UI().getView().showLoading();
+            this.editor.getView().showLoading();
 
             var result: Promise<Core.RsImage>[] = [];
 
-            this.editor.UI().selected().forEach((img: Core.RsImage) => {
+            this.editor.selected().forEach((img: Core.RsImage) => {
                     var act = new FitAction(img, rect, method, position, isCanCrop);
                     result.push(img.getActionDispatcher().process(act));
                 }
@@ -104,7 +104,7 @@ module Modules {
 
         doAction(actions: Promise<Core.RsImage>[]) {
             Promise.all(actions).then(() => {
-                this.editor.UI().getView().update();
+                this.editor.getView().update();
             });
         }
 
@@ -142,7 +142,7 @@ module Modules {
 
         deinit() {
             this.deleteHelpers();
-            this.editor.UI().clearPopover();
+            this.editor.getInterface().clearPopover();
         }
     }
 }

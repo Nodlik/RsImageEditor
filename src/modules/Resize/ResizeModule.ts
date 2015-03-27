@@ -13,7 +13,7 @@ module Modules {
 
         private image: Core.RsImage = null;
 
-        constructor(private editor: Core.RsImageEditor) {}
+        constructor(private editor: UI.Editor) {}
 
         html() {
             return nunjucks.render('resize-single.dialog.html.njs', {
@@ -26,7 +26,7 @@ module Modules {
         unSelectImage(image: Core.RsImage) {}
 
         deinit() {
-            this.editor.UI().clearPopover();
+            this.editor.getInterface().clearPopover();
         }
 
         viewType(): Core.ModuleViewType {
@@ -34,7 +34,7 @@ module Modules {
         }
 
         init($el: JQuery) {
-            this.image = this.editor.UI().selected()[0];
+            this.image = this.editor.selected()[0];
 
             this.$widthInput = $el.find('.m__single-resize__val.width input');
             this.$heightInput = $el.find('.m__single-resize__val.height input');
@@ -130,7 +130,7 @@ module Modules {
             var act = new ResizeAction(this.image, width, height);
 
             this.image.getActionDispatcher().process(act).then(() => {
-                this.editor.UI().getView().update();
+                this.editor.getView().update();
             });
         }
     }
