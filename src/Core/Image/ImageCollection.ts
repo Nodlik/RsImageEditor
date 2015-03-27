@@ -28,14 +28,6 @@ module Core {
             return (this.images.indexOf(image) > -1);
         }
 
-        remove(image: RsImage) {
-            var idx = this.images.indexOf(image);
-
-            if (idx > -1) {
-                this.images.splice(idx, 1);
-            }
-        }
-
         getResolutionStats(): ImageCollectionResolution {
             var min: ImageResolution = {
                 width: this.images[0].width,
@@ -48,14 +40,16 @@ module Core {
             };
 
             this.images.forEach((img) => {
-                if ((img.width * img.height) < (min.width * min.height)) {
-                    min.width = img.width;
-                    min.height = img.height;
-                }
+                if (!img.isDeleted) {
+                    if ((img.width * img.height) < (min.width * min.height)) {
+                        min.width = img.width;
+                        min.height = img.height;
+                    }
 
-                if ((img.width * img.height) > (max.width * max.height)) {
-                    max.width = img.width;
-                    max.height = img.height;
+                    if ((img.width * img.height) > (max.width * max.height)) {
+                        max.width = img.width;
+                        max.height = img.height;
+                    }
                 }
             });
 

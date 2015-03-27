@@ -109,6 +109,26 @@ module UI {
 
                 return false;
             });
+
+            $toolbar.find('#t-button__remove').click(() => {
+                this.controller.getActions().removeSelected();
+
+                return false;
+            });
+        }
+
+        initEditorToolbar($toolbar: JQuery) {
+            $toolbar.find('#t-button__redo-editor').click(() => {
+                this.controller.getActions().redo();
+
+                return false;
+            });
+
+            $toolbar.find('#t-button__undo-editor').click(() => {
+                this.controller.getActions().undo();
+
+                return false;
+            });
         }
 
         private editImage(imageId: string) {

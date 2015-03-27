@@ -411,12 +411,6 @@ var Core;
         ImageCollection.prototype.has = function (image) {
             return (this.images.indexOf(image) > -1);
         };
-        ImageCollection.prototype.remove = function (image) {
-            var idx = this.images.indexOf(image);
-            if (idx > -1) {
-                this.images.splice(idx, 1);
-            }
-        };
         ImageCollection.prototype.getResolutionStats = function () {
             var min = {
                 width: this.images[0].width,
@@ -427,13 +421,15 @@ var Core;
                 height: 0
             };
             this.images.forEach(function (img) {
-                if ((img.width * img.height) < (min.width * min.height)) {
-                    min.width = img.width;
-                    min.height = img.height;
-                }
-                if ((img.width * img.height) > (max.width * max.height)) {
-                    max.width = img.width;
-                    max.height = img.height;
+                if (!img.isDeleted) {
+                    if ((img.width * img.height) < (min.width * min.height)) {
+                        min.width = img.width;
+                        min.height = img.height;
+                    }
+                    if ((img.width * img.height) > (max.width * max.height)) {
+                        max.width = img.width;
+                        max.height = img.height;
+                    }
                 }
             });
             return {
@@ -481,6 +477,48 @@ var Core;
         return ImageCollection;
     })();
     Core.ImageCollection = ImageCollection;
+})(Core || (Core = {}));
+/// <reference path="../Image/RsImage.ts"/>
+/// <reference path="../Image/RsImage.ts"/>
+/// <reference path="EditorAction.ts"/>
+var Core;
+(function (Core) {
+    var EditorActionDispatcher = (function () {
+        function EditorActionDispatcher() {
+            this.current = -1;
+            this.actions = [];
+        }
+        EditorActionDispatcher.prototype.process = function (action) {
+            this.actions.splice(this.current + 1);
+            this.actions.push(action);
+            this.current++;
+            return action.execute();
+        };
+        EditorActionDispatcher.prototype.undo = function () {
+            if (this.current >= 0) {
+                var act = this.actions[this.current];
+                this.current--;
+                return act.unExecute();
+            }
+            return true;
+        };
+        EditorActionDispatcher.prototype.redo = function () {
+            if (this.current < this.actions.length - 1) {
+                this.current++;
+                var act = this.actions[this.current];
+                return act.execute();
+            }
+            return true;
+        };
+        EditorActionDispatcher.prototype.canUndo = function () {
+            return (this.current >= 0);
+        };
+        EditorActionDispatcher.prototype.canRedo = function () {
+            return (this.current < this.actions.length - 1);
+        };
+        return EditorActionDispatcher;
+    })();
+    Core.EditorActionDispatcher = EditorActionDispatcher;
 })(Core || (Core = {}));
 var UI;
 (function (UI) {
@@ -612,7 +650,7 @@ var UI;
             return 1 /* GRID */;
         };
         GridView.prototype.getActualImage = function () {
-            return this.imageCollection.getAll();
+            return this.selected();
         };
         GridView.prototype.render = function () {
             var _this = this;
@@ -699,29 +737,45 @@ var UI;
         function Toolbar(page, editor) {
             this.page = page;
             this.editor = editor;
-            this.$toolbar = this.editor.getInterface().getToolbarPlace();
+            this.$toolbar = this.editor.getInterface().getToolbarPlace().find('#rsToolbarMainAction');
+            this.$editorToolbar = this.editor.getInterface().getToolbarPlace().find('#rsToolbarEditorAction');
         }
         Toolbar.prototype.render = function () {
             this.$toolbar.html("");
+            this.$editorToolbar.html("");
             if ((this.page.getParent() !== null) && (this.page.getParent().images().count() > 1)) {
                 this.renderBackButton(this.$toolbar);
             }
             this.renderCommonButton(this.$toolbar);
         };
-        Toolbar.prototype.renderModuleToolbar = function (type, $el) {
+        Toolbar.prototype.renderDelimiter = function ($el) {
+            $el.append($('<div class="t-delimeter"></div>'));
+        };
+        Toolbar.prototype.renderModuleToolbar = function (type, $el, css) {
             var _this = this;
+            if (css === void 0) { css = ''; }
             var modules = this.editor.getEditor().getModuleManager().getModules(this.editor.getType(), null);
             modules.forEach(function (m) {
                 var $button = $(nunjucks.render('toolbar.button.html.njs', {
                     button: {
                         name: m.name(),
                         icon: m.icon(),
-                        localizedName: m.name()
+                        localizedName: m.name(),
+                        css: css
                     }
                 }));
                 $el.append($button);
                 _this.editor.initModule($button, m);
             });
+        };
+        Toolbar.prototype.renderRemoveButton = function ($el) {
+            $el.append($(nunjucks.render('toolbar.button.html.njs', {
+                button: {
+                    name: 'remove',
+                    icon: 'fa fa-remove',
+                    localizedName: 'remove'
+                }
+            })));
         };
         Toolbar.prototype.renderCommonButton = function ($el) {
             $el.append($(nunjucks.render('toolbar.button.html.njs', {
@@ -731,6 +785,8 @@ var UI;
                     localizedName: 'upload'
                 }
             })));
+        };
+        Toolbar.prototype.renderUndoRedoButton = function ($el) {
             $el.append($(nunjucks.render('toolbar.button.html.njs', {
                 button: {
                     name: 'undo',
@@ -774,8 +830,36 @@ var UI;
         }
         GridToolbar.prototype.render = function () {
             _super.prototype.render.call(this);
-            this.renderModuleToolbar(1 /* GRID */, this.$toolbar);
+            this.renderDelimiter(this.$toolbar);
+            if (this.editor.selected().length > 0) {
+                var $group = $('<div class="rs-toolbar-group"></div>');
+                this.$toolbar.append($group);
+                this.renderUndoRedoButton($group);
+                this.renderDelimiter($group);
+                this.renderModuleToolbar(1 /* GRID */, $group, 't-grid-button');
+                this.renderDelimiter($group);
+                this.renderRemoveButton($group);
+            }
+            if (this.editor.getActionDispather().canUndo()) {
+                this.$editorToolbar.append($(nunjucks.render('toolbar.button.html.njs', {
+                    button: {
+                        name: 'undo-editor',
+                        icon: 'fa fa-undo',
+                        localizedName: 'undo-editor'
+                    }
+                })));
+            }
+            if (this.editor.getActionDispather().canRedo()) {
+                this.$editorToolbar.append($(nunjucks.render('toolbar.button.html.njs', {
+                    button: {
+                        name: 'redo-editor',
+                        icon: 'fa fa-repeat',
+                        localizedName: 'redo-editor'
+                    }
+                })));
+            }
             this.editor.getInterface().initToolbar(this.$toolbar);
+            this.editor.getInterface().initEditorToolbar(this.$editorToolbar);
         };
         return GridToolbar;
     })(UI.Toolbar);
@@ -790,8 +874,14 @@ var UI;
         }
         SingleToolbar.prototype.render = function () {
             _super.prototype.render.call(this);
-            this.renderModuleToolbar(0 /* SINGLE */, this.$toolbar);
+            this.renderDelimiter(this.$toolbar);
+            this.renderUndoRedoButton(this.$toolbar);
+            var $group = $('<div class="rs-toolbar-group"></div>');
+            this.$toolbar.append($group);
+            this.renderModuleToolbar(0 /* SINGLE */, $group, 't-grid-button');
+            this.renderRemoveButton($group);
             this.editor.getInterface().initToolbar(this.$toolbar);
+            this.editor.getInterface().initEditorToolbar(this.$editorToolbar);
         };
         return SingleToolbar;
     })(UI.Toolbar);
@@ -857,8 +947,11 @@ var UI;
                 this.getInformationPlace().parent().hide();
             }
         };
-        Page.prototype.render = function () {
+        Page.prototype.renderToolbar = function () {
             this.getToolbar().render();
+        };
+        Page.prototype.render = function () {
+            this.renderToolbar();
             this.getImagePlace().html("");
             this.renderInformation();
             this.getView().render();
@@ -873,6 +966,8 @@ var UI;
     })();
     UI.Page = Page;
 })(UI || (UI = {}));
+/// <reference path="../Image/RsImage.ts"/>
+/// <reference path="../../Core/Module/ActionModule.ts"/>
 var UI;
 (function (UI) {
     var ModuleInitialization = (function () {
@@ -1084,6 +1179,21 @@ var UI;
                 _this.controller.getActions().imageUndo();
                 return false;
             });
+            $toolbar.find('#t-button__remove').click(function () {
+                _this.controller.getActions().removeSelected();
+                return false;
+            });
+        };
+        EditorView.prototype.initEditorToolbar = function ($toolbar) {
+            var _this = this;
+            $toolbar.find('#t-button__redo-editor').click(function () {
+                _this.controller.getActions().redo();
+                return false;
+            });
+            $toolbar.find('#t-button__undo-editor').click(function () {
+                _this.controller.getActions().undo();
+                return false;
+            });
         };
         EditorView.prototype.editImage = function (imageId) {
             this.controller.openImageEditor(this.controller.getImages().getImage(imageId));
@@ -1103,12 +1213,36 @@ var UI;
     })();
     UI.EditorView = EditorView;
 })(UI || (UI = {}));
+var EditorAction;
+(function (EditorAction) {
+    var RemoveAction = (function () {
+        function RemoveAction(editor, images) {
+            this.editor = editor;
+            this.images = images;
+        }
+        RemoveAction.prototype.execute = function () {
+            this.images.forEach(function (image) {
+                image.isDeleted = true;
+            });
+            return true;
+        };
+        RemoveAction.prototype.unExecute = function () {
+            this.images.forEach(function (image) {
+                image.isDeleted = false;
+            });
+            return true;
+        };
+        return RemoveAction;
+    })();
+    EditorAction.RemoveAction = RemoveAction;
+})(EditorAction || (EditorAction = {}));
 /// <reference path="../Core/RsImageEditor.ts"/>
 /// <reference path="../Core/Image/ImageCollection.ts"/>
 /// <reference path="../Core/Image/RsImage.ts"/>
 /// <reference path="Page.ts"/>
 /// <reference path="Module/ModuleInitialization.ts"/>
 /// <reference path="Widgets/RsProgressBar.ts"/>
+/// <reference path="../EditorAction/RemoveAction.ts"/>
 var UI;
 (function (UI) {
     var EditorActions = (function () {
@@ -1122,8 +1256,22 @@ var UI;
             this.imageHistoryAction('Redo');
         };
         EditorActions.prototype.redo = function () {
+            this.controller.getActionDispather().redo();
+            this.controller.render();
         };
         EditorActions.prototype.undo = function () {
+            this.controller.getActionDispather().undo();
+            this.controller.render();
+        };
+        EditorActions.prototype.removeSelected = function () {
+            var act = new EditorAction.RemoveAction(this.controller, this.getView().selected());
+            this.controller.getActionDispather().process(act);
+            if (this.controller.getType() == 0 /* SINGLE */) {
+                this.controller.back();
+            }
+            else {
+                this.controller.render();
+            }
         };
         EditorActions.prototype.doModuleAction = function (action, type) {
             if (type === void 0) { type = 2 /* ANY */; }
@@ -1162,6 +1310,7 @@ var UI;
 /// <reference path="../Core/RsImageEditor.ts"/>
 /// <reference path="../Core/Image/ImageCollection.ts"/>
 /// <reference path="../Core/Image/RsImage.ts"/>
+/// <reference path="../Core/Action/EditorActionDispatcher.ts"/>
 /// <reference path="Page.ts"/>
 /// <reference path="Module/ModuleInitialization.ts"/>
 /// <reference path="Widgets/RsProgressBar.ts"/>
@@ -1182,7 +1331,11 @@ var UI;
             this.editorAction = new UI.EditorActions(this);
             this.gridPage = new UI.Page(this, this.images);
             this.singlePage = new UI.Page(this, this.images, this.gridPage);
+            this.actionController = new Core.EditorActionDispatcher();
         }
+        Editor.prototype.getActionDispather = function () {
+            return this.actionController;
+        };
         Editor.prototype.getInterface = function () {
             return this.editorView;
         };
@@ -1261,12 +1414,14 @@ var UI;
         };
         Editor.prototype.unSelectImage = function (image) {
             var _this = this;
+            this.page.renderToolbar();
             this.getActions().doModuleAction(function () {
                 _this.activeModule.unSelectImage(image);
             }, this.getType());
         };
         Editor.prototype.selectImage = function (image) {
             var _this = this;
+            this.page.renderToolbar();
             this.getActions().doModuleAction(function () {
                 _this.activeModule.selectImage(image);
             }, this.getType());
@@ -1292,7 +1447,6 @@ var Core;
             this.registerModule('color', new Modules.ColorModule(this.editor.UI()), 2 /* ANY */);
             this.registerModule('crop', new Modules.CropModule(this.editor.UI()), 0 /* SINGLE */);
             this.registerModule('crop-resize', new Modules.CropResizeModule(this.editor.UI()), 1 /* GRID */);
-            this.registerModule('remove', new Modules.RemoveModule(this.editor.UI()), 2 /* ANY */);
         }
         ModuleManager.prototype.registerModule = function (name, editorModule, type) {
             if (!(name in this.modules)) {
@@ -2596,79 +2750,6 @@ var Modules;
         return SizeCalculation;
     })();
     Modules.SizeCalculation = SizeCalculation;
-})(Modules || (Modules = {}));
-/// <reference path="../../Core/Image/RsImage.ts"/>
-/// <reference path="../../Core/Image/ImageResizer.ts"/>
-/// <reference path="../../Core/Action/ImageAction.ts"/>
-var Modules;
-(function (Modules) {
-    var RemoveAction = (function () {
-        function RemoveAction(image) {
-            this.image = image;
-            this.needRender = true;
-        }
-        RemoveAction.prototype.execute = function () {
-            this.image.isDeleted = true;
-            return Promise.resolve(this.image);
-        };
-        RemoveAction.prototype.unExecute = function () {
-            this.image.isDeleted = false;
-            return Promise.resolve(this.image);
-        };
-        return RemoveAction;
-    })();
-    Modules.RemoveAction = RemoveAction;
-})(Modules || (Modules = {}));
-/// <reference path="../Image/RsImage.ts"/>
-/// <reference path="../../Core/Module/ActionModule.ts"/>
-/// <reference path="../../Core/RsImageEditor.ts"/>
-/// <reference path="../../UI/Widgets/RsSlider.ts"/>
-var Modules;
-(function (Modules) {
-    var RemoveModule = (function () {
-        function RemoveModule(editor) {
-            this.editor = editor;
-        }
-        RemoveModule.prototype.process = function () {
-            this.editor.selected().forEach(function (img) {
-                var act = new Modules.RemoveAction(img);
-                img.getActionDispatcher().process(act);
-            });
-            if (this.editor.getType() == 1 /* GRID */) {
-                this.editor.getView().render();
-            }
-            else {
-                this.editor.back();
-            }
-        };
-        RemoveModule.prototype.viewType = function () {
-            return 2 /* ANY */;
-        };
-        RemoveModule.prototype.unSelectImage = function (image) {
-        };
-        RemoveModule.prototype.selectImage = function (image) {
-        };
-        RemoveModule.prototype.update = function () {
-        };
-        RemoveModule.prototype.init = function ($el) {
-        };
-        RemoveModule.prototype.deinit = function () {
-        };
-        RemoveModule.prototype.icon = function () {
-            return 'fa fa-remove';
-        };
-        RemoveModule.prototype.type = function () {
-            return 0 /* ACTION */;
-        };
-        RemoveModule.prototype.parent = function () {
-            return null;
-        };
-        RemoveModule.prototype.name = function () {
-            return 'remove';
-        };
-        return RemoveModule;
-    })();
-    Modules.RemoveModule = RemoveModule;
 })(Modules || (Modules = {}));
 /// <reference path="../../Core/Image/RsImage.ts"/>
 /// <reference path="../../Core/Action/ImageAction.ts"/>

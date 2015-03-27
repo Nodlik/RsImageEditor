@@ -1,13 +1,16 @@
 module UI {
     export class Toolbar {
         $toolbar: JQuery;
+        $editorToolbar: JQuery;
 
         constructor(private page: Page, public editor: UI.Editor) {
-            this.$toolbar = this.editor.getInterface().getToolbarPlace();
+            this.$toolbar = this.editor.getInterface().getToolbarPlace().find('#rsToolbarMainAction');
+            this.$editorToolbar =  this.editor.getInterface().getToolbarPlace().find('#rsToolbarEditorAction');
         }
 
         render() {
             this.$toolbar.html("");
+            this.$editorToolbar.html("");
             if ((this.page.getParent() !== null) && (this.page.getParent().images().count() > 1)) {
                 this.renderBackButton(this.$toolbar);
             }
@@ -15,7 +18,11 @@ module UI {
             this.renderCommonButton(this.$toolbar);
         }
 
-        renderModuleToolbar(type: Core.ModuleViewType, $el: JQuery) {
+        renderDelimiter($el: JQuery) {
+            $el.append($('<div class="t-delimeter"></div>'));
+        }
+
+        renderModuleToolbar(type: Core.ModuleViewType, $el: JQuery, css: string = '') {
             var modules = this.editor.getEditor().getModuleManager().getModules( this.editor.getType(), null );
 
             modules.forEach((m: Core.EditorModule) =>
@@ -24,7 +31,8 @@ module UI {
                         button: {
                             name: m.name(),
                             icon: m.icon(),
-                            localizedName: m.name()
+                            localizedName: m.name(),
+                            css: css
                         }
                     }));
 
@@ -35,6 +43,16 @@ module UI {
             )
         }
 
+        renderRemoveButton($el: JQuery) {
+            $el.append($(nunjucks.render('toolbar.button.html.njs', {
+                button: {
+                    name: 'remove',
+                    icon: 'fa fa-remove',
+                    localizedName: 'remove'
+                }
+            })));
+        }
+
         renderCommonButton($el: JQuery) {
             $el.append($(nunjucks.render('toolbar.button.html.njs', {
                 button: {
@@ -43,7 +61,9 @@ module UI {
                     localizedName: 'upload'
                 }
             })));
+        }
 
+        renderUndoRedoButton($el: JQuery) {
             $el.append($(nunjucks.render('toolbar.button.html.njs', {
                 button: {
                     name: 'undo',
@@ -60,6 +80,7 @@ module UI {
                 }
             })));
         }
+
 
         renderBackButton($el: JQuery) {
             $el.append($(nunjucks.render('toolbar.button.html.njs', {

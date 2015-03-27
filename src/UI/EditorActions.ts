@@ -4,12 +4,11 @@
 /// <reference path="Page.ts"/>
 /// <reference path="Module/ModuleInitialization.ts"/>
 /// <reference path="Widgets/RsProgressBar.ts"/>
+/// <reference path="../EditorAction/RemoveAction.ts"/>
 
 module UI {
     export class EditorActions {
-        constructor(private controller: Editor)
-        {
-        }
+        constructor(private controller: Editor) {}
 
         imageUndo() {
             this.imageHistoryAction('Undo');
@@ -21,11 +20,27 @@ module UI {
 
 
         redo() {
+            this.controller.getActionDispather().redo();
 
+            this.controller.render();
         }
 
         undo() {
+            this.controller.getActionDispather().undo();
 
+            this.controller.render();
+        }
+
+        removeSelected() {
+            var act = new EditorAction.RemoveAction(this.controller, this.getView().selected());
+            this.controller.getActionDispather().process(act);
+
+            if (this.controller.getType() == Core.ModuleViewType.SINGLE) {
+                this.controller.back();
+            }
+            else {
+                this.controller.render();
+            }
         }
 
         doModuleAction(action, type: Core.ModuleViewType = Core.ModuleViewType.ANY) {

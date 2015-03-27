@@ -6,7 +6,7 @@ module Core {
         private actions: EditorAction[];
         private current: number = -1;
 
-        constructor(editor: RsImageEditor) {
+        constructor() {
             this.actions = [];
         }
 
@@ -33,10 +33,18 @@ module Core {
                 this.current++;
                 var act = this.actions[this.current];
 
-                return act.unExecute();
+                return act.execute();
             }
 
             return true;
+        }
+
+        canUndo(): boolean {
+            return (this.current >= 0);
+        }
+
+        canRedo(): boolean {
+            return (this.current < this.actions.length - 1);
         }
     }
 }

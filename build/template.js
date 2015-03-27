@@ -97,7 +97,7 @@ var lineno = null;
 var colno = null;
 var output = "";
 try {
-output += "<div class=\"rs-editor-block\">\n    <input type=\"file\" id=\"rsFileInput\" style=\"display: none\" multiple />\n    <div id=\"rsToolbarPlace\" class=\"rs-toolbar\"></div>\n    <div class=\"rs-progress-bar\" id=\"rsProgressBar\">\n\n    </div>\n    <div class=\"rs-content\">\n        <div id=\"rsImagePlace\" class=\"rs-image-place\"></div>\n        <div class=\"rs-popover\">\n            <div id=\"rsPopover\"></div>\n            <div id=\"rsInformation\" class=\"rs-information\">\n\n            </div>\n        </div>\n    </div>\n</div>";
+output += "<div class=\"rs-editor-block\">\n    <input type=\"file\" id=\"rsFileInput\" style=\"display: none\" multiple />\n    <div id=\"rsToolbarPlace\" class=\"rs-toolbar\">\n        <div id=\"rsToolbarMainAction\" class=\"rs-toolbar-button-block\"></div>\n        <div id=\"rsToolbarEditorAction\" class=\"rs-toolbar-button-block rs-editor-toolbar\"></div>\n    </div>\n    <div class=\"rs-progress-bar\" id=\"rsProgressBar\">\n\n    </div>\n    <div class=\"rs-content\">\n        <div id=\"rsImagePlace\" class=\"rs-image-place\"></div>\n        <div class=\"rs-popover\">\n            <div id=\"rsPopover\"></div>\n            <div id=\"rsInformation\" class=\"rs-information\">\n\n            </div>\n        </div>\n    </div>\n</div>";
 cb(null, output);
 ;
 } catch (e) {
@@ -208,7 +208,12 @@ var output = "";
 try {
 output += "<div id=\"t-button__";
 output += runtime.suppressValue(runtime.memberLookup((runtime.contextOrFrameLookup(context, frame, "button")),"name", env.autoesc), env.autoesc);
-output += "\" class=\"rs-toolbar-button\">\n    ";
+output += "\" class=\"rs-toolbar-button ";
+if(runtime.memberLookup((runtime.contextOrFrameLookup(context, frame, "button")),"css", env.autoesc) != "") {
+output += runtime.suppressValue(runtime.memberLookup((runtime.contextOrFrameLookup(context, frame, "button")),"css", env.autoesc), env.autoesc);
+;
+}
+output += "\">\n    ";
 if(runtime.memberLookup((runtime.contextOrFrameLookup(context, frame, "button")),"icon", env.autoesc) != "") {
 output += "\n    <i class=\"";
 output += runtime.suppressValue(runtime.memberLookup((runtime.contextOrFrameLookup(context, frame, "button")),"icon", env.autoesc), env.autoesc);

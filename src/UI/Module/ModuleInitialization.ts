@@ -1,3 +1,5 @@
+/// <reference path="../../Core/Module/ActionModule.ts"/>
+
 module UI {
     export class ModuleInitialization {
         static init($button: JQuery, editorModule: Core.EditorModule, editor: UI.Editor): Core.EditorModule {

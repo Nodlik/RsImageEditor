@@ -8,14 +8,70 @@
   background-color: @toolbarColor;
   position: relative;
 
+  vertical-align: top;
+
   .box-shadow(0, 4px, 4px, 0, rgba(0, 0, 0, 0.2));
   z-index: 1;
 
   line-height: 1;
 
+  .flex();
+
+  .rs-toolbar-button-block {
+    height: @widgetSize;
+
+    background-color: @toolbarColor;
+    position: relative;
+
+    vertical-align: top;
+    line-height: 1;
+
+    &.rs-editor-toolbar {
+      background-color: @decorationColor;
+
+      * {
+        color: @lightFontColor;
+      }
+
+      .box-shadow(0, 0, 4px, 0, rgba(0, 0, 0, 0.4));
+
+      .rs-toolbar-button:hover {
+        background-color: @decorationDarkColor;
+        * {
+          color: @lightFontColor;
+        }
+      }
+    }
+  }
+
+  .t-delimeter {
+    width: 1px;
+    height: @widgetSize - 10px;
+
+    padding: 0;
+    margin: 5px 0 0 0;
+    line-height: 1;
+
+    background-color: @backgroundSecondColor;
+    display: inline-block;
+    vertical-align: top;
+  }
+
+  .rs-toolbar-group {
+    display: inline-block;
+    position: relative;
+    z-index: 300;
+    background-color: @backgroundColor;
+    height: @widgetSize;
+
+    .box-shadow(0, 0, 3px, 0, rgba(0, 0, 0, 0.4));
+  }
+
   .rs-toolbar-button {
     border: none;
     background: none;
+
+    vertical-align: top;
 
     height: @widgetSize + 1px;
 

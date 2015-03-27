@@ -1,6 +1,7 @@
 /// <reference path="../Core/RsImageEditor.ts"/>
 /// <reference path="../Core/Image/ImageCollection.ts"/>
 /// <reference path="../Core/Image/RsImage.ts"/>
+/// <reference path="../Core/Action/EditorActionDispatcher.ts"/>
 /// <reference path="Page.ts"/>
 /// <reference path="Module/ModuleInitialization.ts"/>
 /// <reference path="Widgets/RsProgressBar.ts"/>
@@ -19,6 +20,8 @@ module UI {
         private editorView: EditorView;
         private editorAction: EditorActions;
 
+        private actionController: Core.EditorActionDispatcher;
+
         constructor(private $el: JQuery, private editor: Core.RsImageEditor, private images: Core.ImageCollection)
         {
             this.editorView = new EditorView($el, this);
@@ -26,6 +29,12 @@ module UI {
 
             this.gridPage = new Page(this, this.images);
             this.singlePage = new Page(this, this.images, this.gridPage);
+
+            this.actionController = new Core.EditorActionDispatcher();
+        }
+
+        getActionDispather(): Core.EditorActionDispatcher {
+            return this.actionController;
         }
 
         getInterface(): EditorView {
@@ -60,7 +69,6 @@ module UI {
                 this.render();
             }
         }
-
 
         /**
          * Get selected image in editor
@@ -127,12 +135,16 @@ module UI {
         }
 
         unSelectImage(image: Core.RsImage) {
+            this.page.renderToolbar();
+
             this.getActions().doModuleAction(() => {
                 this.activeModule.unSelectImage(image);
             }, this.getType());
         }
 
         selectImage(image: Core.RsImage) {
+            this.page.renderToolbar();
+
             this.getActions().doModuleAction(() => {
                 this.activeModule.selectImage(image);
             }, this.getType());

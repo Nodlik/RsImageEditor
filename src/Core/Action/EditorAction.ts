@@ -2,7 +2,7 @@
 
 module Core {
     export interface EditorAction {
-        editor: RsImageEditor;
+        editor: UI.Editor;
 
         execute(): boolean;
         unExecute(): boolean;

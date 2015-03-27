@@ -11,7 +11,7 @@ module UI {
 
 
         getActualImage(): Core.RsImage[] {
-            return this.imageCollection.getAll();
+            return this.selected();
         }
 
         render() {

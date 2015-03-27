@@ -70,8 +70,12 @@ module UI {
             }
         }
 
-        render() {
+        renderToolbar() {
             this.getToolbar().render();
+        }
+
+        render() {
+            this.renderToolbar();
 
             this.getImagePlace().html("");
             this.renderInformation();
