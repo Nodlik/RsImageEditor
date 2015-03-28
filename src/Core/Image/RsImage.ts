@@ -1,14 +1,9 @@
 /// <reference path="../Action/ActionDispatcher.ts"/>
 
 module Core {
-    export interface RsImageState {
-        imageData: ImageData;
-        base64: string;
-    }
-
-    interface CamanContext {
-        caman: CamanObject;
-        context: CanvasRenderingContext2D
+    interface CamanFiler  {
+        name: string;
+        parameters: any[];
     }
 
     export class RsImage {
@@ -24,7 +19,7 @@ module Core {
 
         private imagePromise: Promise<HTMLImageElement>;
 
-        private caman: CamanContext = null;
+        private caman: CamanObject = null;
         private forceCamanUpdate: boolean = false;
 
         public isDeleted = false;
@@ -44,6 +39,8 @@ module Core {
         public sepia: number = 0;
         public noise: number = 0;
         public sharpen: number = 0;
+
+        public filter: CamanFiler = null;
 
 
         constructor(private imageName: string, private imageType: string) {
@@ -123,12 +120,12 @@ module Core {
             this.forceCamanUpdate = true;
         }
 
-        private getCaman(imageData: ImageData, update: boolean = false): Promise<CamanContext> {
+        private getCaman(imageData: ImageData, update: boolean = false): Promise<CamanObject> {
             if ((!update) && (this.caman != null)) {
                 return Promise.resolve(this.caman);
             }
 
-            return new Promise<CamanContext>(
+            return new Promise<CamanObject>(
                 (resolve, reject) => {
                     var camanCanvas = document.createElement('canvas');
                     var camanContext = camanCanvas.getContext('2d');
@@ -138,10 +135,7 @@ module Core {
                     camanContext.putImageData(imageData, 0, 0);
 
                     Caman(camanCanvas, function() {
-                        resolve({
-                            caman: this,
-                            context: camanContext
-                        });
+                        resolve(this);
                     });
                 }
             );
@@ -153,6 +147,8 @@ module Core {
 
             canvas.width = this.originalImage.width;
             canvas.height = this.originalImage.height;
+
+            console.time('save');
 
             context.putImageData(this.originalImage, 0, 0);
 
@@ -187,18 +183,23 @@ module Core {
                     return this.getCaman(imageData, updateCaman);
                 }
             ).then(
-                (camanContext) =>
+                (caman) =>
                 {
-                    this.caman = camanContext;
+                    this.caman = caman;
 
-                    this.caman.caman.revert();
-                    this.caman.caman.brightness(this.brightness);
-                    this.caman.caman.vibrance(this.vibrance);
+                    this.caman.revert();
+                    this.caman.brightness(this.brightness);
+                    this.caman.vibrance(this.vibrance);
+
+                    if (this.filter !== null) {
+                        this.caman[this.filter.name].apply(this.caman, this.filter.parameters);
+                    }
+
 
                     return new Promise<ImageData>(
                         (resolve, reject) => {
-                            this.caman.caman.render(() => {
-                                resolve(this.caman.context.getImageData(0, 0, this.width, this.height));
+                            this.caman.render(() => {
+                                resolve(this.caman.imageData);
                             });
                         }
                     )
@@ -227,6 +228,7 @@ module Core {
                         this.createImagePromise();
                     });
 
+                    console.timeEnd('save');
                     return this;
                 }
             );

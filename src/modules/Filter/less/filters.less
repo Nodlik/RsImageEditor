@@ -1,0 +1,46 @@
+@import "mixin";
+@import "../../../../theme/default/config/config";
+
+.m-filters__filters-list {
+  .m-filter {
+    margin: 5px 0;
+    .flex();
+
+    //.background-opacity(@decorationColor, 0.5);
+
+    .box-shadow(0, 0, 3px, 0, rgba(0, 0, 0, 0.4));
+
+
+    &.selected {
+      background-color: @decorationColor;
+
+      * {
+        color: @lightFontColor;
+      }
+    }
+
+    .m-filter__canvas {
+      width: 100px;
+      padding-left: 10px;
+
+      box-sizing: border-box;
+
+      .flex-grow(0);
+      .flex-shrink(0);
+    }
+
+    .m-filter__name {
+      .flex-grow(1);
+
+      font-size: 90%;
+    }
+
+    .m-filter__vignette {
+      .flex-grow(0);
+      .flex-shrink(0);
+
+      width: 100px;
+      text-align: center;
+    }
+  }
+}

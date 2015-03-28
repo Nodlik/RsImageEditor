@@ -49,6 +49,46 @@ root: root
 };
 })();
 })();
+(function() {(window.nunjucksPrecompiled = window.nunjucksPrecompiled || {})["filter.html.njs"] = (function() {function root(env, context, frame, runtime, cb) {
+var lineno = null;
+var colno = null;
+var output = "";
+try {
+output += "<div class=\"m-filter\">\n    <div class=\"m-filter__canvas\">\n        <canvas id=\"mFilter-";
+output += runtime.suppressValue(runtime.memberLookup((runtime.contextOrFrameLookup(context, frame, "filter")),"name", env.autoesc), env.autoesc);
+output += "\" width=\"50\" height=\"30\"></canvas>\n    </div>\n\n    <div class=\"m-filter__name\">";
+output += runtime.suppressValue(runtime.memberLookup((runtime.contextOrFrameLookup(context, frame, "filter")),"displayName", env.autoesc), env.autoesc);
+output += "</div>\n\n    <div class=\"m-filter__vignette\">\n        <input type=\"checkbox\" checked id=\"mFilter-";
+output += runtime.suppressValue(runtime.memberLookup((runtime.contextOrFrameLookup(context, frame, "filter")),"name", env.autoesc), env.autoesc);
+output += "-vignette\" /> <br />\n    </div>\n</div>";
+cb(null, output);
+;
+} catch (e) {
+  cb(runtime.handleError(e, lineno, colno));
+}
+}
+return {
+root: root
+};
+})();
+})();
+(function() {(window.nunjucksPrecompiled = window.nunjucksPrecompiled || {})["filters.html.njs"] = (function() {function root(env, context, frame, runtime, cb) {
+var lineno = null;
+var colno = null;
+var output = "";
+try {
+output += "<div>\n    <h2>Filters</h2>\n</div>\n\n<div class=\"m-filters__filters-list\">\n\n</div>";
+cb(null, output);
+;
+} catch (e) {
+  cb(runtime.handleError(e, lineno, colno));
+}
+}
+return {
+root: root
+};
+})();
+})();
 (function() {(window.nunjucksPrecompiled = window.nunjucksPrecompiled || {})["resize-grid.dialog.html.njs"] = (function() {function root(env, context, frame, runtime, cb) {
 var lineno = null;
 var colno = null;

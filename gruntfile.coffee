@@ -98,7 +98,7 @@ module.exports = (grunt) ->
             filter: 'isFile'
           ,
             expand: true
-            src: 'packages/js/caman/dist/caman.pack.js'
+            src: 'packages/js/caman/dist/caman.full.pack.js'
             dest: 'build/lib/'
             flatten: true,
             filter: 'isFile'
@@ -122,7 +122,7 @@ module.exports = (grunt) ->
             'build/rs-image-editor.js'
           ],
           'build/rs-image-editor.full.min.js': [
-            'build/lib/caman.pack.js'
+            'build/lib/caman.full.pack.js'
             'build/lib/nunjucks-slim.min.js'
             'build/lib/pica.min.js'
             'build/template.js'

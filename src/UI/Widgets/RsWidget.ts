@@ -24,6 +24,8 @@ module UI.Widgets {
             }
 
             this.events[eventName][eventNamespace].push(callback);
+
+            return this;
         }
 
         off(eventNamespace: string = '_') { // or event ???

@@ -91,6 +91,7 @@ var Core;
             this.sepia = 0;
             this.noise = 0;
             this.sharpen = 0;
+            this.filter = null;
             this.actionDispatcher = new Core.ActionDispatcher(this);
         }
         RsImage.prototype.create = function (imageBase64) {
@@ -157,10 +158,7 @@ var Core;
                 camanCanvas.height = imageData.height;
                 camanContext.putImageData(imageData, 0, 0);
                 Caman(camanCanvas, function () {
-                    resolve({
-                        caman: this,
-                        context: camanContext
-                    });
+                    resolve(this);
                 });
             });
         };
@@ -170,6 +168,7 @@ var Core;
             var context = canvas.getContext('2d');
             canvas.width = this.originalImage.width;
             canvas.height = this.originalImage.height;
+            console.time('save');
             context.putImageData(this.originalImage, 0, 0);
             /* RESIZE */
             var resizePromise;
@@ -193,14 +192,17 @@ var Core;
             /* CAMAN */
             return resizePromise.then(function (imageData) {
                 return _this.getCaman(imageData, updateCaman);
-            }).then(function (camanContext) {
-                _this.caman = camanContext;
-                _this.caman.caman.revert();
-                _this.caman.caman.brightness(_this.brightness);
-                _this.caman.caman.vibrance(_this.vibrance);
+            }).then(function (caman) {
+                _this.caman = caman;
+                _this.caman.revert();
+                _this.caman.brightness(_this.brightness);
+                _this.caman.vibrance(_this.vibrance);
+                if (_this.filter !== null) {
+                    _this.caman[_this.filter.name].apply(_this.caman, _this.filter.parameters);
+                }
                 return new Promise(function (resolve, reject) {
-                    _this.caman.caman.render(function () {
-                        resolve(_this.caman.context.getImageData(0, 0, _this.width, _this.height));
+                    _this.caman.render(function () {
+                        resolve(_this.caman.imageData);
                     });
                 });
             }).then(function (imageData) {
@@ -218,6 +220,7 @@ var Core;
                 _this.getImage().then(function () {
                     _this.createImagePromise();
                 });
+                console.timeEnd('save');
                 return _this;
             });
         };
@@ -536,6 +539,7 @@ var UI;
             this.canvas = null;
             this.scale = 1;
             this.scale = 1;
+            this.$loading = $('<div class="rs-singleView-loader" style="display: none">' + '<i class="fa fa-cog fa-spin"></i> Rendering... </div>"');
         }
         SingleView.prototype.type = function () {
             return 0 /* SINGLE */;
@@ -544,6 +548,7 @@ var UI;
             return [this.image];
         };
         SingleView.prototype.update = function () {
+            this.hideLoading();
             if (!this.needRefresh) {
                 this.renderImage();
                 this.page.renderInformation();
@@ -561,11 +566,14 @@ var UI;
             this.scale = 1;
         };
         SingleView.prototype.showLoading = function () {
+            this.$loading.show();
         };
         SingleView.prototype.hideLoading = function () {
+            this.$loading.hide();
         };
         SingleView.prototype.render = function () {
             var _this = this;
+            this.hideLoading();
             this.page.getImagePlace().html(nunjucks.render('single.image.html.njs', {}));
             this.getCanvas();
             this.renderImage();
@@ -580,6 +588,7 @@ var UI;
                 _this.setZoom(2 /* SOURCE */);
                 return false;
             });
+            this.page.getImagePlace().find('.rs-single-image').append(this.$loading);
             this.needRefresh = false;
         };
         SingleView.prototype.setZoom = function (zoom) {
@@ -1027,6 +1036,7 @@ var UI;
                     this.events[eventName][eventNamespace] = [];
                 }
                 this.events[eventName][eventNamespace].push(callback);
+                return this;
             };
             RsWidget.prototype.off = function (eventNamespace) {
                 var _this = this;
@@ -1445,6 +1455,7 @@ var Core;
             this.modules = {};
             this.registerModule('resize', new Modules.ResizeModule(this.editor.UI()), 0 /* SINGLE */);
             this.registerModule('color', new Modules.ColorModule(this.editor.UI()), 2 /* ANY */);
+            this.registerModule('filter', new Modules.FilterModule(this.editor.UI()), 2 /* ANY */);
             this.registerModule('crop', new Modules.CropModule(this.editor.UI()), 0 /* SINGLE */);
             this.registerModule('crop-resize', new Modules.CropResizeModule(this.editor.UI()), 1 /* GRID */);
         }
@@ -2750,6 +2761,315 @@ var Modules;
         return SizeCalculation;
     })();
     Modules.SizeCalculation = SizeCalculation;
+})(Modules || (Modules = {}));
+/// <reference path="../../Core/Image/RsImage.ts"/>
+/// <reference path="../../Core/Image/ImageResizer.ts"/>
+/// <reference path="../../Core/Action/ImageAction.ts"/>
+var Modules;
+(function (Modules) {
+    var FilterAction = (function () {
+        function FilterAction(image, filterName, vignette) {
+            if (vignette === void 0) { vignette = false; }
+            this.image = image;
+            this.filterName = filterName;
+            this.vignette = vignette;
+            this.needRender = false;
+            this.oldFilter = {
+                name: '',
+                parameters: []
+            };
+        }
+        FilterAction.prototype.execute = function () {
+            this.oldFilter = this.image.filter;
+            if (this.filterName == 'reset') {
+                this.image.filter = null;
+            }
+            else {
+                this.image.filter = {
+                    name: this.filterName,
+                    parameters: [this.vignette]
+                };
+            }
+            return this.image.save();
+        };
+        FilterAction.prototype.unExecute = function () {
+            this.image.filter = this.oldFilter;
+            return this.image.save();
+        };
+        return FilterAction;
+    })();
+    Modules.FilterAction = FilterAction;
+})(Modules || (Modules = {}));
+/// <reference path="../../Core/Module/HtmlModule.ts"/>
+/// <reference path="../../Core/RsImageEditor.ts"/>
+/// <reference path="../../UI/Widgets/RsSlider.ts"/>
+/// <reference path="../../UI/Editor.ts"/>
+var Modules;
+(function (Modules) {
+    var FilterModule = (function () {
+        function FilterModule(editor) {
+            this.editor = editor;
+            this.image = null;
+        }
+        FilterModule.prototype.html = function () {
+            return nunjucks.render('filters.html.njs', {});
+        };
+        FilterModule.prototype.viewType = function () {
+            return 2 /* ANY */;
+        };
+        FilterModule.prototype.unSelectImage = function (image) {
+            this.updateSelectState();
+        };
+        FilterModule.prototype.selectImage = function (image) {
+            this.updateSelectState();
+        };
+        FilterModule.prototype.update = function () {
+            this.updateSelectState(true);
+        };
+        FilterModule.prototype.updateSelectState = function (forceUpdate) {
+            if (forceUpdate === void 0) { forceUpdate = false; }
+            if (this.editor.selected().length > 0) {
+                this.$el.show();
+                var img = this.editor.selected()[0];
+                if ((img != this.image) || (forceUpdate)) {
+                    if (this.widget != null) {
+                        this.widget.destroy();
+                    }
+                    this.image = img;
+                    this.initWidget();
+                }
+                if (this.widget == null) {
+                    this.initWidget();
+                }
+            }
+            else {
+                this.$el.hide();
+            }
+        };
+        FilterModule.prototype.initWidget = function () {
+            var _this = this;
+            var filter = '';
+            if (this.image.filter != null) {
+                filter = this.image.filter.name;
+            }
+            this.widget = new Modules.FiltersListWidget(this.$el, filter);
+            this.widget.draw(this.image);
+            this.widget.on('filter', function (e) {
+                _this.doAction(e.data.filter, e.data.vignette);
+            });
+            this.widget.on('reset', function (e) {
+                _this.doAction('reset');
+            });
+        };
+        FilterModule.prototype.init = function ($el) {
+            this.$el = $el;
+            this.updateSelectState(true);
+        };
+        FilterModule.prototype.deinit = function () {
+            if (this.widget != null) {
+                this.widget.destroy();
+                this.widget = null;
+            }
+            this.editor.getInterface().clearPopover();
+        };
+        FilterModule.prototype.icon = function () {
+            return 'fa fa-filter';
+        };
+        FilterModule.prototype.type = function () {
+            return 1 /* DELEGATE */;
+        };
+        FilterModule.prototype.parent = function () {
+            return null;
+        };
+        FilterModule.prototype.name = function () {
+            return 'filter';
+        };
+        FilterModule.prototype.doAction = function (filterName, vignette) {
+            var _this = this;
+            if (vignette === void 0) { vignette = false; }
+            this.editor.getView().showLoading();
+            var promiseArray = [];
+            this.editor.selected().forEach(function (img) {
+                var act = new Modules.FilterAction(img, filterName, vignette);
+                promiseArray.push(img.getActionDispatcher().process(act));
+            });
+            Promise.all(promiseArray).then(function () {
+                _this.editor.getView().update();
+            });
+        };
+        return FilterModule;
+    })();
+    Modules.FilterModule = FilterModule;
+})(Modules || (Modules = {}));
+var Modules;
+(function (Modules) {
+    var FilterWidget = (function (_super) {
+        __extends(FilterWidget, _super);
+        function FilterWidget($el, filterName, displayFilterName, isSelected) {
+            if (isSelected === void 0) { isSelected = false; }
+            _super.call(this);
+            this.$el = $el;
+            this.filterName = filterName;
+            this.displayFilterName = displayFilterName;
+            this.isSelected = isSelected;
+            this.canvasWidth = 50;
+            this.render();
+        }
+        FilterWidget.prototype.render = function () {
+            var _this = this;
+            this.$block = $(nunjucks.render('filter.html.njs', {
+                'filter': {
+                    'name': this.filterName,
+                    'displayName': this.displayFilterName
+                }
+            }));
+            if (this.isSelected) {
+                this.$block.addClass('selected');
+            }
+            this.$block.on('click.FilterWidget', function (e) {
+                if ($(e.target).attr('type') != 'checkbox') {
+                    _this.trigger('select', {
+                        block: _this.$block,
+                        name: _this.filterName,
+                        vignette: _this.$block.find('#mFilter-' + _this.filterName + '-vignette').is(':checked')
+                    });
+                }
+                else {
+                    _this.trigger('update', {
+                        block: _this.$block,
+                        name: _this.filterName,
+                        vignette: _this.$block.find('#mFilter-' + _this.filterName + '-vignette').is(':checked')
+                    });
+                }
+            });
+            this.$el.append(this.$block);
+        };
+        FilterWidget.prototype.draw = function (caman, w, h) {
+            caman.revert();
+            caman[this.filterName]();
+            var canvas = this.$block.find('canvas')[0];
+            canvas.width = w;
+            canvas.height = 33;
+            var context = canvas.getContext('2d');
+            context.fillRect(0, 0, w, h);
+            return new Promise(function (resolve, reject) {
+                caman.render(function () {
+                    context.putImageData(caman.imageData, 0, 0);
+                    return resolve(caman);
+                });
+            });
+        };
+        FilterWidget.prototype.destroy = function () {
+            var c = this.$block.find('canvas')[0];
+            c.width = 1;
+            c.height = 1;
+            c = null;
+            this.$block.off('.FilterWidget');
+            this.$block.html("");
+        };
+        return FilterWidget;
+    })(UI.Widgets.RsWidget);
+    Modules.FilterWidget = FilterWidget;
+})(Modules || (Modules = {}));
+var Modules;
+(function (Modules) {
+    var FiltersListWidget = (function (_super) {
+        __extends(FiltersListWidget, _super);
+        function FiltersListWidget($el, selected) {
+            if (selected === void 0) { selected = ''; }
+            _super.call(this);
+            this.$el = $el;
+            this.canvasWidth = 50;
+            this.filters = [];
+            this.$filtersList = $el.find('.m-filters__filters-list');
+            this.createFilter('lomo', 'Lomo', selected);
+            this.createFilter('vintage', 'Vintage', selected);
+            this.createFilter('clarity', 'Clarity', selected);
+            this.createFilter('sinCity', 'Sin City', selected);
+            this.createFilter('sunrise', 'Sunrise', selected);
+            this.createFilter('crossProcess', 'Cross Process', selected);
+            this.createFilter('orangePeel', 'Orange Peel', selected);
+            this.createFilter('love', 'Love', selected);
+            this.createFilter('grungy', 'Grungy', selected);
+            this.createFilter('jarques', 'Jarques', selected);
+            this.createFilter('pinhole', 'Pinhole', selected);
+            this.createFilter('oldBoot', 'Old Boot', selected);
+            this.createFilter('glowingSun', 'Glowing Sun', selected);
+            this.createFilter('hazyDays', 'Hazy Days', selected);
+            this.createFilter('herMajesty', 'Her Majesty', selected);
+            this.createFilter('nostalgia', 'Nostalgia', selected);
+            this.createFilter('hemingway', 'Hemingway', selected);
+            this.createFilter('concentrate', 'Concentrate', selected);
+        }
+        FiltersListWidget.prototype.draw = function (image) {
+            var _this = this;
+            var w = this.canvasWidth;
+            var h = image.height * this.canvasWidth / image.width;
+            this.initCaman(image, w, h).then(function (caman) {
+                var drawPromise = null;
+                _this.filters.forEach(function (f) {
+                    if (drawPromise != null) {
+                        drawPromise = drawPromise.then(function (c) {
+                            return f.draw(c, w, h);
+                        });
+                    }
+                    else {
+                        drawPromise = f.draw(caman, w, h);
+                    }
+                });
+            });
+        };
+        FiltersListWidget.prototype.destroy = function () {
+            this.filters.forEach(function (f) {
+                f.destroy();
+            });
+            this.filters = [];
+        };
+        FiltersListWidget.prototype.initCaman = function (image, w, h) {
+            return new Promise(function (resolve, reject) {
+                (new Core.ImageResizer(image.getImageData(), w, h)).resize().then(function (imageData) {
+                    var canvas = document.createElement('canvas');
+                    var context = canvas.getContext('2d');
+                    canvas.width = w;
+                    canvas.height = 33;
+                    context.putImageData(imageData, 0, 0);
+                    Caman(canvas, function () {
+                        resolve(this);
+                    });
+                });
+            });
+        };
+        FiltersListWidget.prototype.createFilter = function (name, displayName, selectedFilter) {
+            var _this = this;
+            var isSelected = false;
+            if (selectedFilter == name) {
+                isSelected = true;
+            }
+            this.filters.push((new Modules.FilterWidget(this.$filtersList, name, displayName, isSelected)).on('select', function (e) {
+                _this.selectFilter(e.data.block, e.data.name, e.data.vignette);
+            }).on('update', function (e) {
+                _this.setFilter(e.data.block, e.data.name, e.data.vignette);
+            }));
+        };
+        FiltersListWidget.prototype.setFilter = function ($el, name, vignette) {
+            this.$el.find('.m-filter').removeClass('selected');
+            $el.addClass('selected');
+            this.trigger('filter', { filter: name, vignette: vignette });
+        };
+        FiltersListWidget.prototype.selectFilter = function ($el, name, vignette) {
+            if ($el.hasClass('selected')) {
+                this.trigger('reset');
+                this.$el.find('.m-filter').removeClass('selected');
+            }
+            else {
+                this.$el.find('.m-filter').removeClass('selected');
+                $el.addClass('selected');
+                this.trigger('filter', { filter: name, vignette: vignette });
+            }
+        };
+        return FiltersListWidget;
+    })(UI.Widgets.RsWidget);
+    Modules.FiltersListWidget = FiltersListWidget;
 })(Modules || (Modules = {}));
 /// <reference path="../../Core/Image/RsImage.ts"/>
 /// <reference path="../../Core/Action/ImageAction.ts"/>

@@ -7,10 +7,15 @@ module UI {
         private canvas: HTMLCanvasElement = null;
         private context: CanvasRenderingContext2D;
 
+        private $loading: JQuery;
+
         private scale: number = 1;
 
         constructor(private page: Page, private image: Core.RsImage) {
             this.scale = 1;
+
+            this.$loading = $('<div class="rs-singleView-loader" style="display: none">' +
+                '<i class="fa fa-cog fa-spin"></i> Rendering... </div>"')
         }
 
         type(): Core.ModuleViewType {
@@ -22,6 +27,8 @@ module UI {
         }
 
         update() {
+            this.hideLoading();
+
             if (!this.needRefresh) {
                 this.renderImage();
                 this.page.renderInformation();
@@ -42,11 +49,17 @@ module UI {
             this.scale = 1;
         }
 
-        showLoading() {}
+        showLoading() {
+            this.$loading.show();
+        }
 
-        hideLoading() {}
+        hideLoading() {
+            this.$loading.hide();
+        }
 
         render() {
+            this.hideLoading();
+
             this.page.getImagePlace().html(
                 nunjucks.render('single.image.html.njs', {})
             );
@@ -69,6 +82,8 @@ module UI {
 
                 return false;
             });
+
+            this.page.getImagePlace().find('.rs-single-image').append(this.$loading);
 
             this.needRefresh = false;
         }
