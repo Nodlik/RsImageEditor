@@ -6,6 +6,12 @@ module Core {
         parameters: any[];
     }
 
+    export interface Channels {
+        red: number;
+        green: number;
+        blue: number;
+    }
+
     export class RsImage {
         private id = '';
 
@@ -30,7 +36,7 @@ module Core {
         public brightness: number = 0;
         public vibrance: number = 0;
         public hue: number = 0;
-        public gamma: number = 0;
+        public gamma: number = 1;
         public clip: number = 0;
         public stackBlur: number = 0;
         public contrast: number = 0;
@@ -39,6 +45,12 @@ module Core {
         public sepia: number = 0;
         public noise: number = 0;
         public sharpen: number = 0;
+
+        public channels: Channels = {
+            red: 0,
+            green: 0,
+            blue: 0
+        };
 
         public filter: CamanFiler = null;
 
@@ -190,11 +202,24 @@ module Core {
                     this.caman.revert();
                     this.caman.brightness(this.brightness);
                     this.caman.vibrance(this.vibrance);
+                    this.caman.hue(this.hue);
+                    this.caman.gamma(this.gamma);
+
+                    this.caman.clip(this.clip);
+                    this.caman.stackBlur(this.stackBlur);
+                    this.caman.contrast(this.contrast);
+                    this.caman.saturation(this.saturation);
+
+                    this.caman.exposure(this.exposure);
+                    this.caman.sepia(this.sepia);
+                    this.caman.noise(this.noise);
+                    this.caman.sharpen(this.sharpen);
+
+                    this.caman.channels(_.extend({}, this.channels));
 
                     if (this.filter !== null) {
                         this.caman[this.filter.name].apply(this.caman, this.filter.parameters);
                     }
-
 
                     return new Promise<ImageData>(
                         (resolve, reject) => {

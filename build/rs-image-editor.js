@@ -82,7 +82,7 @@ var Core;
             this.brightness = 0;
             this.vibrance = 0;
             this.hue = 0;
-            this.gamma = 0;
+            this.gamma = 1;
             this.clip = 0;
             this.stackBlur = 0;
             this.contrast = 0;
@@ -91,6 +91,11 @@ var Core;
             this.sepia = 0;
             this.noise = 0;
             this.sharpen = 0;
+            this.channels = {
+                red: 0,
+                green: 0,
+                blue: 0
+            };
             this.filter = null;
             this.actionDispatcher = new Core.ActionDispatcher(this);
         }
@@ -197,6 +202,17 @@ var Core;
                 _this.caman.revert();
                 _this.caman.brightness(_this.brightness);
                 _this.caman.vibrance(_this.vibrance);
+                _this.caman.hue(_this.hue);
+                _this.caman.gamma(_this.gamma);
+                _this.caman.clip(_this.clip);
+                _this.caman.stackBlur(_this.stackBlur);
+                _this.caman.contrast(_this.contrast);
+                _this.caman.saturation(_this.saturation);
+                _this.caman.exposure(_this.exposure);
+                _this.caman.sepia(_this.sepia);
+                _this.caman.noise(_this.noise);
+                _this.caman.sharpen(_this.sharpen);
+                _this.caman.channels(_.extend({}, _this.channels));
                 if (_this.filter !== null) {
                     _this.caman[_this.filter.name].apply(_this.caman, _this.filter.parameters);
                 }
@@ -325,24 +341,30 @@ var Core;
 /// <reference path="../../Core/Action/ImageAction.ts"/>
 var Modules;
 (function (Modules) {
-    var BrightnessAction = (function () {
-        function BrightnessAction(image, brightness) {
+    var ChannelsAction = (function () {
+        function ChannelsAction(image, red, green, blue) {
             this.image = image;
-            this.brightness = brightness;
+            this.red = red;
+            this.green = green;
+            this.blue = blue;
             this.needRender = false;
         }
-        BrightnessAction.prototype.execute = function () {
-            this.oldBrightness = this.image.brightness;
-            this.image.brightness = this.brightness;
+        ChannelsAction.prototype.execute = function () {
+            this.oldValue = this.image.channels;
+            this.image.channels = {
+                red: this.red,
+                green: this.green,
+                blue: this.blue
+            };
             return this.image.save();
         };
-        BrightnessAction.prototype.unExecute = function () {
-            this.image.brightness = this.oldBrightness;
+        ChannelsAction.prototype.unExecute = function () {
+            this.image.channels = this.oldValue;
             return this.image.save();
         };
-        return BrightnessAction;
+        return ChannelsAction;
     })();
-    Modules.BrightnessAction = BrightnessAction;
+    Modules.ChannelsAction = ChannelsAction;
 })(Modules || (Modules = {}));
 var Core;
 (function (Core) {
@@ -897,7 +919,7 @@ var UI;
                 this.renderDelimiter($group);
                 this.renderRemoveButton($group);
             }
-            if (this.editor.getActionDispather().canUndo()) {
+            if (this.editor.getActionDispatcher().canUndo()) {
                 this.$editorToolbar.append($(nunjucks.render('toolbar.button.html.njs', {
                     button: {
                         name: 'undo-editor',
@@ -906,7 +928,7 @@ var UI;
                     }
                 })));
             }
-            if (this.editor.getActionDispather().canRedo()) {
+            if (this.editor.getActionDispatcher().canRedo()) {
                 this.$editorToolbar.append($(nunjucks.render('toolbar.button.html.njs', {
                     button: {
                         name: 'redo-editor',
@@ -1317,16 +1339,16 @@ var UI;
             this.imageHistoryAction('Redo');
         };
         EditorActions.prototype.redo = function () {
-            this.controller.getActionDispather().redo();
+            this.controller.getActionDispatcher().redo();
             this.controller.render();
         };
         EditorActions.prototype.undo = function () {
-            this.controller.getActionDispather().undo();
+            this.controller.getActionDispatcher().undo();
             this.controller.render();
         };
         EditorActions.prototype.removeSelected = function () {
             var act = new EditorAction.RemoveAction(this.controller, this.getView().selected());
-            this.controller.getActionDispather().process(act);
+            this.controller.getActionDispatcher().process(act);
             if (this.controller.getType() == 0 /* SINGLE */) {
                 this.controller.back();
             }
@@ -1394,7 +1416,7 @@ var UI;
             this.singlePage = new UI.Page(this, this.images, this.gridPage);
             this.actionController = new Core.EditorActionDispatcher();
         }
-        Editor.prototype.getActionDispather = function () {
+        Editor.prototype.getActionDispatcher = function () {
             return this.actionController;
         };
         Editor.prototype.getInterface = function () {
@@ -1505,6 +1527,7 @@ var Core;
             this.editor = editor;
             this.modules = {};
             this.registerModule('resize', new Modules.ResizeModule(this.editor.UI()), 0 /* SINGLE */);
+            this.registerModule('image', new Modules.ImageModule(this.editor.UI()), 2 /* ANY */);
             this.registerModule('color', new Modules.ColorModule(this.editor.UI()), 2 /* ANY */);
             this.registerModule('filter', new Modules.FilterModule(this.editor.UI()), 2 /* ANY */);
             this.registerModule('crop', new Modules.CropModule(this.editor.UI()), 0 /* SINGLE */);
@@ -1668,7 +1691,7 @@ var UI;
                             pos = size;
                         }
                         _this.$slider.css('left', pos + 'px');
-                        _this.trigger('move', _this.getVal(pos));
+                        _this.trigger('move', Math.round((_this.getVal(pos)) * 10) / 10); // this.getVal(pos).toFixed(1));
                     });
                     $body.on('mouseup.RsSlider', function () {
                         var newPos = parseInt(_this.$slider.css('left'));
@@ -1681,6 +1704,9 @@ var UI;
                 });
                 this.trigger('move', this.start);
             }
+            RsSlider.prototype.getElement = function () {
+                return this.$el;
+            };
             RsSlider.prototype.set = function (value, label) {
                 if (label === void 0) { label = ''; }
                 this.$slider.css('left', this.getPixelPos(value) + 'px');
@@ -1711,71 +1737,77 @@ var Modules;
     var ColorModule = (function () {
         function ColorModule(editor) {
             this.editor = editor;
+            this.sliders = {};
+            this.channels = {
+                red: 0,
+                green: 0,
+                blue: 0
+            };
         }
         ColorModule.prototype.html = function () {
-            return nunjucks.render('color.dialog.html.njs', {});
+            return nunjucks.render('color.html.njs', {});
         };
         ColorModule.prototype.viewType = function () {
             return 2 /* ANY */;
         };
         ColorModule.prototype.unSelectImage = function (image) {
-            this.updateSelectState();
+            this.update();
         };
         ColorModule.prototype.selectImage = function (image) {
-            this.updateSelectState();
+            this.update();
         };
         ColorModule.prototype.update = function () {
-            this.updateSelectState();
-        };
-        ColorModule.prototype.updateSelectState = function () {
             var images = this.editor.selected();
             if (images.length == 1) {
-                var image = images[0];
-                this.brightnessSlider.set(image.brightness);
-                this.vibranceSlider.set(image.vibrance);
+                this.updateSlidersByImage(images[0]);
             }
             else if (images.length > 0) {
-                this.setSliderValue('brightness', this.brightnessSlider, images);
-                this.setSliderValue('vibrance', this.vibranceSlider, images);
+                this.updateSliders(images);
             }
             else {
-                this.brightnessSlider.set(0, '-');
-                this.vibranceSlider.set(0, '-');
+                this.setSlidersValue(0, '-');
             }
         };
-        ColorModule.prototype.setSliderValue = function (prop, slider, images) {
-            var v = images[0][prop];
-            for (var i = 0; i < images.length; i++) {
-                if (v != images[i][prop]) {
-                    slider.set(0, '-');
-                    return;
+        ColorModule.prototype.updateSlidersByImage = function (image) {
+            _.map(this.sliders, function (slider, key) {
+                slider.set(image.channels[key]);
+            });
+        };
+        ColorModule.prototype.setSlidersValue = function (value, label) {
+            if (label === void 0) { label = ''; }
+            _.map(this.sliders, function (slider, key) {
+                slider.set(value, label);
+            });
+        };
+        ColorModule.prototype.updateSliders = function (images) {
+            _.map(this.sliders, function (slider, key) {
+                var v = images[0].channels[key];
+                slider.set(v);
+                for (var i = 0; i < images.length; i++) {
+                    if (v != images[i].channels[key]) {
+                        slider.set(0, '-');
+                        return;
+                    }
                 }
-            }
-            slider.set(v);
+            });
         };
         ColorModule.prototype.init = function ($el) {
             var _this = this;
-            var brightness = 0;
-            var vibrance = 0;
-            if (this.editor.getType() == 0 /* SINGLE */) {
-                var img = this.editor.selected()[0];
-                brightness = img.brightness;
-                vibrance = img.vibrance;
-            }
-            this.brightnessSlider = new UI.Widgets.RsSlider($el.find('#brightnessSlider'), -100, 100, 1, brightness);
-            this.brightnessSlider.on('stopmove', function (e) {
-                _this.doAction(Modules.BrightnessAction, e.data);
+            $el.find('.m__color-slider').each(function (i, s) {
+                var $slider = $(s);
+                _this.sliders[$slider.data('name')] = (new UI.Widgets.RsSlider($slider, $slider.data('min'), $slider.data('max'), $slider.data('step'))).on('stopmove', function (e) {
+                    var name = e.widget.getElement().data('name');
+                    _this.channels[name] = e.data;
+                    _this.doAction();
+                });
             });
-            this.vibranceSlider = new UI.Widgets.RsSlider($el.find('#vibranceSlider'), -200, 200, 5, vibrance);
-            this.vibranceSlider.on('stopmove', function (e) {
-                _this.doAction(Modules.VibranceAction, e.data);
-            });
+            this.update();
         };
         ColorModule.prototype.deinit = function () {
             this.editor.getInterface().clearPopover();
         };
         ColorModule.prototype.icon = function () {
-            return 'fa fa-image';
+            return 'fa fa-stumbleupon-circle';
         };
         ColorModule.prototype.type = function () {
             return 1 /* DELEGATE */;
@@ -1786,12 +1818,12 @@ var Modules;
         ColorModule.prototype.name = function () {
             return 'color';
         };
-        ColorModule.prototype.doAction = function (action, value) {
+        ColorModule.prototype.doAction = function () {
             var _this = this;
             this.editor.getView().showLoading();
             var promiseArray = [];
             this.editor.selected().forEach(function (img) {
-                var act = new action(img, value);
+                var act = new Modules.ChannelsAction(img, _this.channels.red, _this.channels.green, _this.channels.blue);
                 promiseArray.push(img.getActionDispatcher().process(act));
             });
             Promise.all(promiseArray).then(function () {
@@ -1801,30 +1833,6 @@ var Modules;
         return ColorModule;
     })();
     Modules.ColorModule = ColorModule;
-})(Modules || (Modules = {}));
-/// <reference path="../../Core/Image/RsImage.ts"/>
-/// <reference path="../../Core/Image/ImageResizer.ts"/>
-/// <reference path="../../Core/Action/ImageAction.ts"/>
-var Modules;
-(function (Modules) {
-    var VibranceAction = (function () {
-        function VibranceAction(image, value) {
-            this.image = image;
-            this.value = value;
-            this.needRender = false;
-        }
-        VibranceAction.prototype.execute = function () {
-            this.oldValue = this.image.vibrance;
-            this.image.vibrance = this.value;
-            return this.image.save();
-        };
-        VibranceAction.prototype.unExecute = function () {
-            this.image.vibrance = this.oldValue;
-            return this.image.save();
-        };
-        return VibranceAction;
-    })();
-    Modules.VibranceAction = VibranceAction;
 })(Modules || (Modules = {}));
 /// <reference path="../../Core/Image/RsImage.ts"/>
 /// <reference path="../../Core/Action/ImageAction.ts"/>
@@ -3121,6 +3129,130 @@ var Modules;
         return FiltersListWidget;
     })(UI.Widgets.RsWidget);
     Modules.FiltersListWidget = FiltersListWidget;
+})(Modules || (Modules = {}));
+/// <reference path="../../Core/Image/RsImage.ts"/>
+/// <reference path="../../Core/Image/ImageResizer.ts"/>
+/// <reference path="../../Core/Action/ImageAction.ts"/>
+var Modules;
+(function (Modules) {
+    var ImageAction = (function () {
+        function ImageAction(image, prop, newValue) {
+            this.image = image;
+            this.prop = prop;
+            this.newValue = newValue;
+            this.needRender = false;
+        }
+        ImageAction.prototype.execute = function () {
+            this.oldValue = this.image[this.prop];
+            this.image[this.prop] = this.newValue;
+            return this.image.save();
+        };
+        ImageAction.prototype.unExecute = function () {
+            this.image[this.prop] = this.oldValue;
+            return this.image.save();
+        };
+        return ImageAction;
+    })();
+    Modules.ImageAction = ImageAction;
+})(Modules || (Modules = {}));
+/// <reference path="../../Core/Module/HtmlModule.ts"/>
+/// <reference path="../../Core/RsImageEditor.ts"/>
+/// <reference path="../../UI/Widgets/RsSlider.ts"/>
+/// <reference path="../../UI/Editor.ts"/>
+var Modules;
+(function (Modules) {
+    var ImageModule = (function () {
+        function ImageModule(editor) {
+            this.editor = editor;
+            this.sliders = {};
+        }
+        ImageModule.prototype.html = function () {
+            return nunjucks.render('image.html.njs', {});
+        };
+        ImageModule.prototype.viewType = function () {
+            return 2 /* ANY */;
+        };
+        ImageModule.prototype.unSelectImage = function (image) {
+            this.update();
+        };
+        ImageModule.prototype.selectImage = function (image) {
+            this.update();
+        };
+        ImageModule.prototype.update = function () {
+            var images = this.editor.selected();
+            if (images.length == 1) {
+                this.updateSlidersByImage(images[0]);
+            }
+            else if (images.length > 0) {
+                this.updateSliders(images);
+            }
+            else {
+                this.setSlidersValue(0, '-');
+            }
+        };
+        ImageModule.prototype.updateSlidersByImage = function (image) {
+            _.map(this.sliders, function (slider, key) {
+                slider.set(image[key]);
+            });
+        };
+        ImageModule.prototype.setSlidersValue = function (value, label) {
+            if (label === void 0) { label = ''; }
+            _.map(this.sliders, function (slider, key) {
+                slider.set(value, label);
+            });
+        };
+        ImageModule.prototype.updateSliders = function (images) {
+            _.map(this.sliders, function (slider, key) {
+                var v = images[0][key];
+                slider.set(v);
+                for (var i = 0; i < images.length; i++) {
+                    if (v != images[i][key]) {
+                        slider.set(0, '-');
+                        return;
+                    }
+                }
+            });
+        };
+        ImageModule.prototype.init = function ($el) {
+            var _this = this;
+            $el.find('.m__image-slider').each(function (i, s) {
+                var $slider = $(s);
+                _this.sliders[$slider.data('name')] = (new UI.Widgets.RsSlider($slider, $slider.data('min'), $slider.data('max'), $slider.data('step'))).on('stopmove', function (e) {
+                    _this.doAction(e.widget.getElement().data('name'), e.data);
+                });
+            });
+            this.update();
+        };
+        ImageModule.prototype.deinit = function () {
+            this.editor.getInterface().clearPopover();
+        };
+        ImageModule.prototype.icon = function () {
+            return 'fa fa-image';
+        };
+        ImageModule.prototype.type = function () {
+            return 1 /* DELEGATE */;
+        };
+        ImageModule.prototype.parent = function () {
+            return null;
+        };
+        ImageModule.prototype.name = function () {
+            return 'image';
+        };
+        ImageModule.prototype.doAction = function (name, value) {
+            var _this = this;
+            this.editor.getView().showLoading();
+            var promiseArray = [];
+            this.editor.selected().forEach(function (img) {
+                var act = new Modules.ImageAction(img, name, value);
+                promiseArray.push(img.getActionDispatcher().process(act));
+            });
+            Promise.all(promiseArray).then(function () {
+                _this.editor.getView().update();
+            });
+        };
+        return ImageModule;
+    })();
+    Modules.ImageModule = ImageModule;
 })(Modules || (Modules = {}));
 /// <reference path="../../Core/Image/RsImage.ts"/>
 /// <reference path="../../Core/Action/ImageAction.ts"/>

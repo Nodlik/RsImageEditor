@@ -20,20 +20,20 @@ module UI {
 
 
         redo() {
-            this.controller.getActionDispather().redo();
+            this.controller.getActionDispatcher().redo();
 
             this.controller.render();
         }
 
         undo() {
-            this.controller.getActionDispather().undo();
+            this.controller.getActionDispatcher().undo();
 
             this.controller.render();
         }
 
         removeSelected() {
             var act = new EditorAction.RemoveAction(this.controller, this.getView().selected());
-            this.controller.getActionDispather().process(act);
+            this.controller.getActionDispatcher().process(act);
 
             if (this.controller.getType() == Core.ModuleViewType.SINGLE) {
                 this.controller.back();

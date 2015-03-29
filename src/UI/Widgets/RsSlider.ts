@@ -33,7 +33,7 @@ module UI.Widgets {
                     }
 
                     this.$slider.css('left', pos + 'px');
-                    this.trigger('move', this.getVal(pos));
+                    this.trigger('move', Math.round((this.getVal(pos)) * 10) / 10); // this.getVal(pos).toFixed(1));
                 });
 
                 $body.on('mouseup.RsSlider', () => {
@@ -49,6 +49,10 @@ module UI.Widgets {
             });
 
             this.trigger('move', this.start);
+        }
+
+        public getElement(): JQuery {
+            return this.$el;
         }
 
         public set(value: number, label = '') {

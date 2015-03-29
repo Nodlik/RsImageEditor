@@ -13,6 +13,7 @@ module Core {
         constructor(private editor: RsImageEditor)
         {
             this.registerModule('resize', new Modules.ResizeModule(this.editor.UI()), ModuleViewType.SINGLE);
+            this.registerModule('image', new Modules.ImageModule(this.editor.UI()), ModuleViewType.ANY);
             this.registerModule('color', new Modules.ColorModule(this.editor.UI()), ModuleViewType.ANY);
             this.registerModule('filter', new Modules.FilterModule(this.editor.UI()), ModuleViewType.ANY);
             this.registerModule('crop', new Modules.CropModule(this.editor.UI()), ModuleViewType.SINGLE);

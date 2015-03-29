@@ -4,19 +4,14 @@
 /// <reference path="../../UI/Editor.ts"/>
 
 module Modules {
-    export class ColorModule implements Core.HtmlModule
+    export class ImageModule implements Core.HtmlModule
     {
         private sliders: {[name: string]: UI.Widgets.RsSlider} = {};
-        private channels: Core.Channels = {
-            red: 0,
-            green: 0,
-            blue: 0
-        };
 
         constructor(private editor: UI.Editor) {}
 
         html() {
-            return nunjucks.render('color.html.njs', {});
+            return nunjucks.render('image.html.njs', {});
         }
 
         viewType(): Core.ModuleViewType {
@@ -47,7 +42,7 @@ module Modules {
 
         private updateSlidersByImage(image: Core.RsImage) {
             _.map(this.sliders, (slider: UI.Widgets.RsSlider, key: string) => {
-                slider.set(image.channels[key]);
+                slider.set(image[key]);
             });
         }
 
@@ -60,11 +55,11 @@ module Modules {
         private updateSliders(images: Core.RsImage[]) {
             _.map(this.sliders, (slider: UI.Widgets.RsSlider, key: string) =>
                 {
-                    var v = images[0].channels[key];
+                    var v = images[0][key];
                     slider.set(v);
 
                     for (var i = 0; i < images.length; i++) {
-                        if (v != images[i].channels[key]) {
+                        if (v != images[i][key]) {
                             slider.set(0, '-');
 
                             return;
@@ -75,16 +70,16 @@ module Modules {
         }
 
         init($el: JQuery) {
-            $el.find('.m__color-slider').each((i, s) => {
+            $el.find('.m__image-slider').each((i, s) => {
                 var $slider = $(s);
 
                 this.sliders[$slider.data('name')] = <UI.Widgets.RsSlider>(new UI.Widgets.RsSlider(
                         $slider, $slider.data('min'), $slider.data('max'), $slider.data('step')
                     )).on('stopmove', (e) => {
-                        var name = (<UI.Widgets.RsSlider>e.widget).getElement().data('name');
-                        this.channels[name] = e.data;
-
-                        this.doAction();
+                        this.doAction(
+                            (<UI.Widgets.RsSlider>e.widget).getElement().data('name'),
+                            e.data
+                        );
                     });
             });
 
@@ -96,7 +91,7 @@ module Modules {
         }
 
         icon() {
-            return 'fa fa-stumbleupon-circle'
+            return 'fa fa-image'
         }
 
         type() {
@@ -108,16 +103,16 @@ module Modules {
         }
 
         name() {
-            return 'color';
+            return 'image';
         }
 
-        doAction() {
+        doAction(name, value: number) {
             this.editor.getView().showLoading();
 
             var promiseArray: Promise<Core.RsImage>[] = [];
 
             this.editor.selected().forEach((img: Core.RsImage) => {
-                    var act = new ChannelsAction(img, this.channels.red, this.channels.green, this.channels.blue);
+                    var act = new ImageAction(img, name, value);
                     promiseArray.push(img.getActionDispatcher().process(act));
                 }
             );

@@ -1,9 +1,9 @@
-(function() {(window.nunjucksPrecompiled = window.nunjucksPrecompiled || {})["color.dialog.html.njs"] = (function() {function root(env, context, frame, runtime, cb) {
+(function() {(window.nunjucksPrecompiled = window.nunjucksPrecompiled || {})["color.html.njs"] = (function() {function root(env, context, frame, runtime, cb) {
 var lineno = null;
 var colno = null;
 var output = "";
 try {
-output += "<div>\n    <h2>Color</h2>\n</div>\n<div class=\"m__color-item\">\n    Brightness\n    <div id=\"brightnessSlider\"></div>\n</div>\n<div class=\"m__color-item\">\n    Vibrance\n    <div id=\"vibranceSlider\"></div>\n</div>";
+output += "<div>\n    <h2>Color</h2>\n</div>\n<div class=\"m__color-item\">\n    Red\n    <div class=\"m__color-slider\" data-name=\"red\" data-min=\"-100\" data-max=\"100\" data-step=\"1\"></div>\n</div>\n<div class=\"m__color-item\">\n    Green\n    <div  class=\"m__color-slider\" data-name=\"green\" data-min=\"-100\" data-max=\"100\" data-step=\"1\"></div>\n</div>\n<div class=\"m__color-item\">\n    Blue\n    <div class=\"m__color-slider\" data-name=\"blue\" data-min=\"-100\" data-max=\"100\" data-step=\"1\"></div>\n</div>";
 cb(null, output);
 ;
 } catch (e) {
@@ -78,6 +78,23 @@ var colno = null;
 var output = "";
 try {
 output += "<div>\n    <h2>Filters</h2>\n</div>\n\n<div class=\"m-filters__filters-list\">\n\n</div>";
+cb(null, output);
+;
+} catch (e) {
+  cb(runtime.handleError(e, lineno, colno));
+}
+}
+return {
+root: root
+};
+})();
+})();
+(function() {(window.nunjucksPrecompiled = window.nunjucksPrecompiled || {})["image.html.njs"] = (function() {function root(env, context, frame, runtime, cb) {
+var lineno = null;
+var colno = null;
+var output = "";
+try {
+output += "<div>\n    <h2>Image</h2>\n</div>\n<div class=\"m__image-item\">\n    Brightness\n    <div class=\"m__image-slider\" data-name=\"brightness\" data-min=\"-100\" data-max=\"100\" data-step=\"1\"></div>\n</div>\n<div class=\"m__image-item\">\n    Vibrance\n    <div  class=\"m__image-slider\" data-name=\"vibrance\" data-min=\"-200\" data-max=\"200\" data-step=\"10\"></div>\n</div>\n<div class=\"m__image-item\">\n    Hue\n    <div class=\"m__image-slider\" data-name=\"hue\" data-min=\"0\" data-max=\"100\" data-step=\"1\"></div>\n</div>\n<div class=\"m__image-item\">\n    Gamma\n    <div class=\"m__image-slider\" data-name=\"gamma\" data-min=\"0\" data-max=\"10\" data-step=\"0.1\"></div>\n</div>\n<div class=\"m__image-item\">\n    Clip\n    <div class=\"m__image-slider\" data-name=\"clip\" data-min=\"0\" data-max=\"100\" data-step=\"1\"></div>\n</div>\n<div class=\"m__image-item\">\n    Stack Blur\n    <div class=\"m__image-slider\" data-name=\"stackBlur\" data-min=\"0\" data-max=\"20\" data-step=\"1\"></div>\n</div>\n<div class=\"m__image-item\">\n    Contrast\n    <div class=\"m__image-slider\" data-name=\"contrast\" data-min=\"-100\" data-max=\"100\" data-step=\"1\"></div>\n</div>\n<div class=\"m__image-item\">\n    Saturation\n    <div class=\"m__image-slider\" data-name=\"saturation\" data-min=\"-100\" data-max=\"100\" data-step=\"1\"></div>\n</div>\n<div class=\"m__image-item\">\n    Exposure\n    <div class=\"m__image-slider\" data-name=\"exposure\" data-min=\"-100\" data-max=\"100\" data-step=\"1\"></div>\n</div>\n<div class=\"m__image-item\">\n    Sepia\n    <div class=\"m__image-slider\" data-name=\"sepia\" data-min=\"0\" data-max=\"100\" data-step=\"1\"></div>\n</div>\n<div class=\"m__image-item\">\n    Noise\n    <div class=\"m__image-slider\" data-name=\"noise\" data-min=\"0\" data-max=\"100\" data-step=\"1\"></div>\n</div>\n<div class=\"m__image-item\">\n    Sharpen\n    <div class=\"m__image-slider\" data-name=\"sharpen\" data-min=\"0\" data-max=\"100\" data-step=\"1\"></div>\n</div>";
 cb(null, output);
 ;
 } catch (e) {

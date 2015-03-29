@@ -20,7 +20,7 @@ module UI {
                 this.renderRemoveButton($group);
             }
 
-            if (this.editor.getActionDispather().canUndo()) {
+            if (this.editor.getActionDispatcher().canUndo()) {
                 this.$editorToolbar.append($(nunjucks.render('toolbar.button.html.njs', {
                     button: {
                         name: 'undo-editor',
@@ -30,7 +30,7 @@ module UI {
                 })));
             }
 
-            if (this.editor.getActionDispather().canRedo()) {
+            if (this.editor.getActionDispatcher().canRedo()) {
                 this.$editorToolbar.append($(nunjucks.render('toolbar.button.html.njs', {
                     button: {
                         name: 'redo-editor',

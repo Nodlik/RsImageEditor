@@ -33,7 +33,7 @@ module UI {
             this.actionController = new Core.EditorActionDispatcher();
         }
 
-        getActionDispather(): Core.EditorActionDispatcher {
+        getActionDispatcher(): Core.EditorActionDispatcher {
             return this.actionController;
         }
 

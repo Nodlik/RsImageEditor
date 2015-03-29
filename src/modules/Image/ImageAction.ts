@@ -4,24 +4,24 @@
 
 
 module Modules {
-    export class BrightnessAction implements Core.ImageAction {
+    export class ImageAction implements Core.ImageAction {
         public needRender: boolean = false;
-        private oldBrightness: number;
+        private oldValue: number;
 
-        constructor(public image: Core.RsImage, private brightness: number) {
+        constructor(public image: Core.RsImage, public prop: string, private newValue: number) {
 
         }
 
         execute() {
-            this.oldBrightness = this.image.brightness;
+            this.oldValue = this.image[this.prop];
 
-            this.image.brightness = this.brightness;
+            this.image[this.prop] = this.newValue;
 
             return this.image.save();
         }
 
         unExecute() {
-            this.image.brightness = this.oldBrightness;
+            this.image[this.prop] = this.oldValue;
 
             return this.image.save();
         }
