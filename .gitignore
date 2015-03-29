@@ -1,5 +1,4 @@
 node_modules
 .idea
 index.html
-packages/*
-theme/default/lib/font-awesome/*
+packages/js/*

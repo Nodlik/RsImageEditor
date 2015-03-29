@@ -53,6 +53,14 @@ module UI {
             }
         }
 
+        downloadSelected() {
+            var image = this.getView().selected()[0];
+            var $link = $('<a href="' + image.getImageBase64() + '" id="btn-download" download="' + image.getName() + '"></a>');
+            $('body').append($link);
+            $link[0].click();
+            $link.remove();
+        }
+
         private getView(): ViewInterface {
             return this.controller.getView();
         }

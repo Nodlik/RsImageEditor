@@ -6,7 +6,7 @@
 /// <reference path="Widgets/RsProgressBar.ts"/>
 
 module UI {
-    export class EditorView {
+    export class EditorInterface {
         private progressBar: Widgets.RsProgressBar;
         private $popOver: JQuery;
 
@@ -110,11 +110,6 @@ module UI {
                 return false;
             });
 
-            $toolbar.find('#t-button__remove').click(() => {
-                this.controller.getActions().removeSelected();
-
-                return false;
-            });
         }
 
         initEditorToolbar($toolbar: JQuery) {
@@ -126,6 +121,18 @@ module UI {
 
             $toolbar.find('#t-button__undo-editor').click(() => {
                 this.controller.getActions().undo();
+
+                return false;
+            });
+
+            $toolbar.find('#t-button__remove').click(() => {
+                this.controller.getActions().removeSelected();
+
+                return false;
+            });
+
+            $toolbar.find('#t-button__download').click(() => {
+                this.controller.getActions().downloadSelected();
 
                 return false;
             });

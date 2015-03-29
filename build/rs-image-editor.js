@@ -607,10 +607,14 @@ var UI;
             $b.off('.view');
             $b.on('click.view', '#fitToWidth', function () {
                 _this.setZoom(0 /* WIDTH */);
+                $('#fitToWidth').addClass('selected');
+                $('#sourceSize').removeClass('selected');
                 return false;
             });
             $b.on('click.view', '#sourceSize', function () {
                 _this.setZoom(2 /* SOURCE */);
+                $('#sourceSize').addClass('selected');
+                $('#fitToWidth').removeClass('selected');
                 return false;
             });
             this.page.getImagePlace().find('.rs-single-image').append(this.$loading);
@@ -917,7 +921,7 @@ var UI;
                 this.renderDelimiter($group);
                 this.renderModuleToolbar(1 /* GRID */, $group, 't-grid-button');
                 this.renderDelimiter($group);
-                this.renderRemoveButton($group);
+                this.renderRemoveButton(this.$editorToolbar);
             }
             if (this.editor.getActionDispatcher().canUndo()) {
                 this.$editorToolbar.append($(nunjucks.render('toolbar.button.html.njs', {
@@ -958,7 +962,14 @@ var UI;
             var $group = $('<div class="rs-toolbar-group"></div>');
             this.$toolbar.append($group);
             this.renderModuleToolbar(0 /* SINGLE */, $group, 't-grid-button');
-            this.renderRemoveButton($group);
+            this.$editorToolbar.append(($(nunjucks.render('toolbar.button.html.njs', {
+                button: {
+                    name: 'download',
+                    icon: 'fa fa-download',
+                    localizedName: 'download'
+                }
+            }))));
+            this.renderRemoveButton(this.$editorToolbar);
             this.editor.getInterface().initToolbar(this.$toolbar);
             this.editor.getInterface().initEditorToolbar(this.$editorToolbar);
         };
@@ -1192,8 +1203,8 @@ var UI;
 /// <reference path="Widgets/RsProgressBar.ts"/>
 var UI;
 (function (UI) {
-    var EditorView = (function () {
-        function EditorView($el, controller) {
+    var EditorInterface = (function () {
+        function EditorInterface($el, controller) {
             var _this = this;
             this.$el = $el;
             this.controller = controller;
@@ -1225,31 +1236,31 @@ var UI;
                 _this.progressBar.stop('Loading complete!');
             });
         }
-        EditorView.prototype.showProgressBar = function (opCount) {
+        EditorInterface.prototype.showProgressBar = function (opCount) {
             this.progressBar.start('Loading image...', opCount);
         };
-        EditorView.prototype.progress = function (op) {
+        EditorInterface.prototype.progress = function (op) {
             this.progressBar.setProgress(op, 'Image ' + op + ' from ' + this.progressBar.getOpCount());
         };
-        EditorView.prototype.showPopover = function (content) {
+        EditorInterface.prototype.showPopover = function (content) {
             this.$popOver.html(content);
             this.$popOver.show();
             return this.$popOver;
         };
-        EditorView.prototype.clearPopover = function () {
+        EditorInterface.prototype.clearPopover = function () {
             this.$popOver.html("");
             this.$popOver.hide();
         };
-        EditorView.prototype.getImagePlace = function () {
+        EditorInterface.prototype.getImagePlace = function () {
             return this.$imagePlace;
         };
-        EditorView.prototype.getToolbarPlace = function () {
+        EditorInterface.prototype.getToolbarPlace = function () {
             return this.$toolbarPlace;
         };
-        EditorView.prototype.getInformationPlace = function () {
+        EditorInterface.prototype.getInformationPlace = function () {
             return this.$informationPlace;
         };
-        EditorView.prototype.initToolbar = function ($toolbar) {
+        EditorInterface.prototype.initToolbar = function ($toolbar) {
             var _this = this;
             if (this.controller.getActiveModule() != null) {
                 $toolbar.find('#t-button__' + this.controller.getActiveModule().name()).addClass('active');
@@ -1262,12 +1273,8 @@ var UI;
                 _this.controller.getActions().imageUndo();
                 return false;
             });
-            $toolbar.find('#t-button__remove').click(function () {
-                _this.controller.getActions().removeSelected();
-                return false;
-            });
         };
-        EditorView.prototype.initEditorToolbar = function ($toolbar) {
+        EditorInterface.prototype.initEditorToolbar = function ($toolbar) {
             var _this = this;
             $toolbar.find('#t-button__redo-editor').click(function () {
                 _this.controller.getActions().redo();
@@ -1277,11 +1284,19 @@ var UI;
                 _this.controller.getActions().undo();
                 return false;
             });
+            $toolbar.find('#t-button__remove').click(function () {
+                _this.controller.getActions().removeSelected();
+                return false;
+            });
+            $toolbar.find('#t-button__download').click(function () {
+                _this.controller.getActions().downloadSelected();
+                return false;
+            });
         };
-        EditorView.prototype.editImage = function (imageId) {
+        EditorInterface.prototype.editImage = function (imageId) {
             this.controller.openImageEditor(this.controller.getImages().getImage(imageId));
         };
-        EditorView.prototype.selectImage = function ($el) {
+        EditorInterface.prototype.selectImage = function ($el) {
             var image = this.controller.getImages().getImage($el.data('id')).getImages()[0];
             if ($el.hasClass('rs-image-selected')) {
                 $el.removeClass('rs-image-selected');
@@ -1292,9 +1307,9 @@ var UI;
                 this.controller.selectImage(image);
             }
         };
-        return EditorView;
+        return EditorInterface;
     })();
-    UI.EditorView = EditorView;
+    UI.EditorInterface = EditorInterface;
 })(UI || (UI = {}));
 var EditorAction;
 (function (EditorAction) {
@@ -1365,6 +1380,13 @@ var UI;
                 }
             }
         };
+        EditorActions.prototype.downloadSelected = function () {
+            var image = this.getView().selected()[0];
+            var $link = $('<a href="' + image.getImageBase64() + '" id="btn-download" download="' + image.getName() + '"></a>');
+            $('body').append($link);
+            $link[0].click();
+            $link.remove();
+        };
         EditorActions.prototype.getView = function () {
             return this.controller.getView();
         };
@@ -1397,7 +1419,7 @@ var UI;
 /// <reference path="Page.ts"/>
 /// <reference path="Module/ModuleInitialization.ts"/>
 /// <reference path="Widgets/RsProgressBar.ts"/>
-/// <reference path="EditorView.ts"/>
+/// <reference path="EditorInterface.ts"/>
 /// <reference path="EditorActions.ts"/>
 var UI;
 (function (UI) {
@@ -1410,7 +1432,7 @@ var UI;
             this.gridPage = null;
             this.singlePage = null;
             this.activeModule = null;
-            this.editorView = new UI.EditorView($el, this);
+            this.editorView = new UI.EditorInterface($el, this);
             this.editorAction = new UI.EditorActions(this);
             this.gridPage = new UI.Page(this, this.images);
             this.singlePage = new UI.Page(this, this.images, this.gridPage);

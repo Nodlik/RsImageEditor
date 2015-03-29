@@ -14,8 +14,16 @@ module UI {
             this.$toolbar.append($group);
 
             this.renderModuleToolbar(Core.ModuleViewType.SINGLE, $group, 't-grid-button');
-            this.renderRemoveButton($group);
-
+            this.$editorToolbar.append(
+                ($(nunjucks.render('toolbar.button.html.njs', {
+                    button: {
+                        name: 'download',
+                        icon: 'fa fa-download',
+                        localizedName: 'download'
+                    }
+                })))
+            );
+            this.renderRemoveButton(this.$editorToolbar);
 
             this.editor.getInterface().initToolbar(this.$toolbar);
             this.editor.getInterface().initEditorToolbar(this.$editorToolbar);

@@ -73,12 +73,16 @@ module UI {
 
             $b.on('click.view', '#fitToWidth', () => {
                 this.setZoom(ZoomType.WIDTH);
+                $('#fitToWidth').addClass('selected');
+                $('#sourceSize').removeClass('selected');
 
                 return false;
             });
 
             $b.on('click.view', '#sourceSize', () => {
                 this.setZoom(ZoomType.SOURCE);
+                $('#sourceSize').addClass('selected');
+                $('#fitToWidth').removeClass('selected');
 
                 return false;
             });

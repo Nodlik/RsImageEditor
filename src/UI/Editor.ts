@@ -5,7 +5,7 @@
 /// <reference path="Page.ts"/>
 /// <reference path="Module/ModuleInitialization.ts"/>
 /// <reference path="Widgets/RsProgressBar.ts"/>
-/// <reference path="EditorView.ts"/>
+/// <reference path="EditorInterface.ts"/>
 /// <reference path="EditorActions.ts"/>
 
 module UI {
@@ -17,14 +17,14 @@ module UI {
 
         private activeModule: Core.EditorModule = null;
 
-        private editorView: EditorView;
+        private editorView: EditorInterface;
         private editorAction: EditorActions;
 
         private actionController: Core.EditorActionDispatcher;
 
         constructor(private $el: JQuery, private editor: Core.RsImageEditor, private images: Core.ImageCollection)
         {
-            this.editorView = new EditorView($el, this);
+            this.editorView = new EditorInterface($el, this);
             this.editorAction = new EditorActions(this);
 
             this.gridPage = new Page(this, this.images);
@@ -37,7 +37,7 @@ module UI {
             return this.actionController;
         }
 
-        getInterface(): EditorView {
+        getInterface(): EditorInterface {
             return this.editorView;
         }
 

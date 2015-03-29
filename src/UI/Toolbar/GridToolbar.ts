@@ -17,7 +17,7 @@ module UI {
                 this.renderDelimiter($group);
                 this.renderModuleToolbar(Core.ModuleViewType.GRID, $group, 't-grid-button');
                 this.renderDelimiter($group);
-                this.renderRemoveButton($group);
+                this.renderRemoveButton(this.$editorToolbar);
             }
 
             if (this.editor.getActionDispatcher().canUndo()) {
