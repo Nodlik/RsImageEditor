@@ -617,7 +617,7 @@ var UI;
                 $('#fitToWidth').removeClass('selected');
                 return false;
             });
-            this.page.getImagePlace().find('.rs-single-image').append(this.$loading);
+            this.page.getImagePlace().append(this.$loading);
             this.needRefresh = false;
         };
         SingleView.prototype.setZoom = function (zoom) {
@@ -625,7 +625,7 @@ var UI;
             var $canvas = $container.find('canvas');
             var value = 1;
             if (zoom == 0 /* WIDTH */) {
-                value = ($container.width() / $canvas.width());
+                value = (($container.width() - 20) / $canvas.width());
                 $container.css('overflow', 'hidden');
             }
             else if (zoom == 2 /* SOURCE */) {
@@ -635,7 +635,7 @@ var UI;
         };
         SingleView.prototype.setScale = function (scale) {
             var $container = this.page.getImagePlace().find('.rs-single-image');
-            var $canvas = $container.find('canvas');
+            var $canvas = $container.find('.rs-canvas-place');
             $container.scrollLeft(0);
             $container.scrollTop(0);
             $canvas.css('transform-origin', '0 0');

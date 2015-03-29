@@ -87,7 +87,7 @@ module UI {
                 return false;
             });
 
-            this.page.getImagePlace().find('.rs-single-image').append(this.$loading);
+            this.page.getImagePlace().append(this.$loading);
 
             this.needRefresh = false;
         }
@@ -98,7 +98,7 @@ module UI {
 
             var value = 1;
             if (zoom == ZoomType.WIDTH) {
-                value = ($container.width() / $canvas.width());
+                value = (($container.width() - 20) / $canvas.width());
                 $container.css('overflow', 'hidden');
             }
             else if (zoom == ZoomType.SOURCE) {
@@ -110,7 +110,7 @@ module UI {
 
         private setScale(scale: number) {
             var $container = this.page.getImagePlace().find('.rs-single-image');
-            var $canvas = $container.find('canvas');
+            var $canvas = $container.find('.rs-canvas-place');
 
             $container.scrollLeft(0);
             $container.scrollTop(0);
