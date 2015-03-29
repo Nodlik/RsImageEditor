@@ -23,6 +23,8 @@ module UI {
             images.forEach((img) => {
                 this.renderImage(img);
             });
+
+            this.initSelectBlock(this.page.getInformationPlace().find('#rsSelect'));
         }
 
         setImages(images: Core.ImageCollection) {
@@ -61,7 +63,9 @@ module UI {
                 images.forEach((el: Core.RsImage) => {
                     this.updateImage(el);
                 });
+
                 this.page.renderInformation();
+                this.initSelectBlock(this.page.getInformationPlace().find('#rsSelect'));
             }
             else {
                 this.render();
@@ -76,6 +80,59 @@ module UI {
             this.page.getImagePlace().find('.rs-image-selected').find('.rs-image-block').removeClass('loading');
         }
 
+        private initSelectBlock($el: JQuery) {
+            $el.find('#rsSelectAll').click((e) => {
+                $el.find('.rs-select__link').removeClass('selected');
+                this.selectImage(this.imageCollection.getImages());
+                $(e.target).addClass('selected');
+
+                return false;
+            });
+
+            $el.find('#rsSelectNew').click((e) => {
+                $el.find('.rs-select__link').removeClass('selected');
+                this.selectImage(this.imageCollection.getNotSaved());
+                $(e.target).addClass('selected');
+
+                return false;
+            });
+
+            $el.find('#rsDeselectAll').click(() => {
+                $el.find('.rs-select__link').removeClass('selected');
+                this.deselectAll();
+                this.page.renderToolbar();
+
+                return false;
+            });
+        }
+
+        private selectImage(images: Core.RsImage[]) {
+            this.deselectAll();
+
+            images.forEach((img) => {
+                var $el = this.page.getImagePlace().find('#img__' + img.getId());
+                $el.addClass('rs-image-selected');
+                $el.find('input').prop("checked", "true");
+
+                this.page.getEditor().selectImage(img);
+            });
+
+            this.updateModule();
+        }
+
+        private deselectAll() {
+            var $images = this.page.getImagePlace().find('.rs-image');
+            $images.removeClass('rs-image-selected');
+            $images.find('input').removeAttr('checked');
+
+            this.updateModule();
+        }
+
+        private updateModule() {
+            this.page.getEditor().getActions().doModuleAction((m) => {
+                m.update();
+            }, Core.ModuleViewType.GRID)
+        }
 
         private updateImage(image: Core.RsImage) {
             var $el = this.page.getImagePlace().find('#img__' + image.getId());

@@ -183,7 +183,7 @@ var lineno = null;
 var colno = null;
 var output = "";
 try {
-output += "<h2 class=\"rs-information__title\">\n    Information\n</h2>\n<div class=\"rs-information__total\">\n    <div>\n        Pictures <br />\n        <b>";
+output += "<h2 class=\"rs-information__title\">\n    Select\n</h2>\n<div class=\"rs-information__select\" id=\"rsSelect\">\n    <div class=\"rs-select\">\n        Select <a href=\"#all\" class=\"rs-select__link\" id=\"rsSelectAll\">all</a>, <a href=\"#new\" id=\"rsSelectNew\" class=\"rs-select__link\">new</a> images\n    </div>\n    <div class=\"rs-select rs-select__deselect\">\n        <a href=\"#deselect\" id=\"rsDeselectAll\">Deselect all</a>\n    </div>\n</div>\n\n\n<h2 class=\"rs-information__title\">\n    Information\n</h2>\n<div class=\"rs-information__total\">\n    <div>\n        Pictures <br />\n        <b>";
 output += runtime.suppressValue(runtime.contextOrFrameLookup(context, frame, "count"), env.autoesc);
 output += "</b>\n    </div>\n    <div>\n        Min resolution <br />\n        <b>";
 output += runtime.suppressValue(runtime.contextOrFrameLookup(context, frame, "minResolution"), env.autoesc);

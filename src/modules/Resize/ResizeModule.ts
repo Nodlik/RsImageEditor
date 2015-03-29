@@ -129,6 +129,7 @@ module Modules {
         }
 
         doAction(width: number, height: number) {
+            this.editor.getView().showLoading();
             var act = new ResizeAction(this.image, width, height);
 
             this.image.getActionDispatcher().process(act).then(() => {

@@ -1,0 +1,37 @@
+@import "../config/config";
+@import "../lib/mixin";
+
+.rs-information__select {
+  padding: 0 10px;
+
+  .rs-select {
+    font-size: 90%;
+  }
+
+  .rs-select__link {
+    color: @linkColor;
+    text-decoration: underline;
+
+    &:hover {
+      text-decoration: none;
+    }
+
+    &.selected {
+      background-color: @decorationColor;
+      color: @lightFontColor;
+      padding: 1px;
+    }
+  }
+
+  .rs-select__deselect {
+    margin-top: 5px;
+
+    a {
+      color: @linkColor;
+
+      &:hover {
+        text-decoration: none;
+      }
+    }
+  }
+}

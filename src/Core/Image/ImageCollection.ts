@@ -67,6 +67,10 @@ module Core {
             return this.images;
         }
 
+        getNotSaved(): RsImage[] {
+            return this.getImages();
+        }
+
         getImages(): RsImage[] {
             var result = [];
             this.images.forEach((img) => {

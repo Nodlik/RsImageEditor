@@ -90,5 +90,9 @@ module UI {
         getInformationPlace(): JQuery {
             return this.editor.getInterface().getInformationPlace();
         }
+
+        getEditor(): Editor {
+            return this.editor;
+        }
     }
 }

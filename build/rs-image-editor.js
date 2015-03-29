@@ -446,6 +446,9 @@ var Core;
         ImageCollection.prototype.getAll = function () {
             return this.images;
         };
+        ImageCollection.prototype.getNotSaved = function () {
+            return this.getImages();
+        };
         ImageCollection.prototype.getImages = function () {
             var result = [];
             this.images.forEach(function (img) {
@@ -669,6 +672,7 @@ var UI;
             images.forEach(function (img) {
                 _this.renderImage(img);
             });
+            this.initSelectBlock(this.page.getInformationPlace().find('#rsSelect'));
         };
         GridView.prototype.setImages = function (images) {
             this.imageCollection = images;
@@ -699,6 +703,7 @@ var UI;
                     _this.updateImage(el);
                 });
                 this.page.renderInformation();
+                this.initSelectBlock(this.page.getInformationPlace().find('#rsSelect'));
             }
             else {
                 this.render();
@@ -709,6 +714,49 @@ var UI;
         };
         GridView.prototype.hideLoading = function () {
             this.page.getImagePlace().find('.rs-image-selected').find('.rs-image-block').removeClass('loading');
+        };
+        GridView.prototype.initSelectBlock = function ($el) {
+            var _this = this;
+            $el.find('#rsSelectAll').click(function (e) {
+                $el.find('.rs-select__link').removeClass('selected');
+                _this.selectImage(_this.imageCollection.getImages());
+                $(e.target).addClass('selected');
+                return false;
+            });
+            $el.find('#rsSelectNew').click(function (e) {
+                $el.find('.rs-select__link').removeClass('selected');
+                _this.selectImage(_this.imageCollection.getNotSaved());
+                $(e.target).addClass('selected');
+                return false;
+            });
+            $el.find('#rsDeselectAll').click(function () {
+                $el.find('.rs-select__link').removeClass('selected');
+                _this.deselectAll();
+                _this.page.renderToolbar();
+                return false;
+            });
+        };
+        GridView.prototype.selectImage = function (images) {
+            var _this = this;
+            this.deselectAll();
+            images.forEach(function (img) {
+                var $el = _this.page.getImagePlace().find('#img__' + img.getId());
+                $el.addClass('rs-image-selected');
+                $el.find('input').prop("checked", "true");
+                _this.page.getEditor().selectImage(img);
+            });
+            this.updateModule();
+        };
+        GridView.prototype.deselectAll = function () {
+            var $images = this.page.getImagePlace().find('.rs-image');
+            $images.removeClass('rs-image-selected');
+            $images.find('input').removeAttr('checked');
+            this.updateModule();
+        };
+        GridView.prototype.updateModule = function () {
+            this.page.getEditor().getActions().doModuleAction(function (m) {
+                m.update();
+            }, 1 /* GRID */);
         };
         GridView.prototype.updateImage = function (image) {
             var $el = this.page.getImagePlace().find('#img__' + image.getId());
@@ -970,6 +1018,9 @@ var UI;
         };
         Page.prototype.getInformationPlace = function () {
             return this.editor.getInterface().getInformationPlace();
+        };
+        Page.prototype.getEditor = function () {
+            return this.editor;
         };
         return Page;
     })();
@@ -3199,6 +3250,7 @@ var Modules;
         };
         ResizeModule.prototype.doAction = function (width, height) {
             var _this = this;
+            this.editor.getView().showLoading();
             var act = new Modules.ResizeAction(this.image, width, height);
             this.image.getActionDispatcher().process(act).then(function () {
                 _this.editor.getView().update();
