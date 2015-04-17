@@ -721,15 +721,15 @@ var UI;
             });
             return this.imageCollection.findImage(ids);
         };
-        GridView.prototype.update = function () {
-            var _this = this;
+        GridView.prototype.update = function (image) {
+            if (image === void 0) { image = null; }
             if (!this.needRefresh) {
-                var images = this.imageCollection.getImages();
-                images.forEach(function (el) {
-                    _this.updateImage(el);
-                });
-                this.page.renderInformation();
-                this.initSelectBlock(this.page.getInformationPlace().find('#rsSelect'));
+                if (image == null) {
+                    this.updateImages();
+                }
+                else {
+                    this.updateImage(image);
+                }
             }
             else {
                 this.render();
@@ -740,6 +740,15 @@ var UI;
         };
         GridView.prototype.hideLoading = function () {
             this.page.getImagePlace().find('.rs-image-selected').find('.rs-image-block').removeClass('loading');
+        };
+        GridView.prototype.updateImages = function () {
+            var _this = this;
+            var images = this.imageCollection.getImages();
+            images.forEach(function (el) {
+                _this.updateImage(el);
+            });
+            this.page.renderInformation();
+            this.initSelectBlock(this.page.getInformationPlace().find('#rsSelect'));
         };
         GridView.prototype.initSelectBlock = function ($el) {
             var _this = this;
@@ -2273,14 +2282,14 @@ var Modules;
             var _this = this;
             this.fit = new Modules.Fit(this.$el, this.images, this.editor);
             this.fit.on('apply', function (e) {
-                _this.doAction(_this.createFitActions(e.data.rect, e.data.method, e.data.fitPosition, e.data.isCanCrop));
+                _this.doFitActions(e.data.rect, e.data.method, e.data.fitPosition, e.data.isCanCrop);
             });
         };
         CropResizeModule.prototype.initCrop = function () {
             var _this = this;
             this.crop = new Modules.Crop(this.$el, this.images, this.editor);
             this.crop.on('apply', function (e) {
-                _this.doAction(_this.createCropActions(e.data.size, e.data.fitPosition));
+                _this.doCropActions(e.data.size, e.data.fitPosition);
             });
         };
         CropResizeModule.prototype.update = function () {
@@ -2295,28 +2304,24 @@ var Modules;
                 this.$el.hide();
             }
         };
-        CropResizeModule.prototype.createCropActions = function (size, position) {
+        CropResizeModule.prototype.doCropActions = function (size, position) {
+            var _this = this;
             this.editor.getView().showLoading();
-            var result = [];
             this.editor.selected().forEach(function (img) {
                 var act = new Modules.CropAction(img, 0, 0, size.width, size.height, position);
-                result.push(img.getActionDispatcher().process(act));
+                img.getActionDispatcher().process(act).then(function (image) {
+                    _this.editor.getView().update(image);
+                });
             });
-            return result;
         };
-        CropResizeModule.prototype.createFitActions = function (rect, method, position, isCanCrop) {
+        CropResizeModule.prototype.doFitActions = function (rect, method, position, isCanCrop) {
+            var _this = this;
             this.editor.getView().showLoading();
-            var result = [];
             this.editor.selected().forEach(function (img) {
                 var act = new Modules.FitAction(img, rect, method, position, isCanCrop);
-                result.push(img.getActionDispatcher().process(act));
-            });
-            return result;
-        };
-        CropResizeModule.prototype.doAction = function (actions) {
-            var _this = this;
-            Promise.all(actions).then(function () {
-                _this.editor.getView().update();
+                img.getActionDispatcher().process(act).then(function (image) {
+                    _this.editor.getView().update(image);
+                });
             });
         };
         CropResizeModule.prototype.html = function () {
@@ -2969,13 +2974,11 @@ var Modules;
             var _this = this;
             if (vignette === void 0) { vignette = false; }
             this.editor.getView().showLoading();
-            var promiseArray = [];
             this.editor.selected().forEach(function (img) {
                 var act = new Modules.FilterAction(img, filterName, vignette);
-                promiseArray.push(img.getActionDispatcher().process(act));
-            });
-            Promise.all(promiseArray).then(function () {
-                _this.editor.getView().update();
+                img.getActionDispatcher().process(act).then(function (image) {
+                    _this.editor.getView().update(image);
+                });
             });
         };
         return FilterModule;

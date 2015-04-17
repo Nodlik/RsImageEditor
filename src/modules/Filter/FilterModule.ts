@@ -108,17 +108,15 @@ module Modules {
         doAction(filterName, vignette: boolean = false) {
             this.editor.getView().showLoading();
 
-            var promiseArray: Promise<Core.RsImage>[] = [];
-
             this.editor.selected().forEach((img: Core.RsImage) => {
                     var act = new FilterAction(img, filterName, vignette);
-                    promiseArray.push(img.getActionDispatcher().process(act));
+
+                    img.getActionDispatcher().process(act).then((image) => {
+                        this.editor.getView().update(image);
+                    });
                 }
             );
 
-            Promise.all(promiseArray).then(() => {
-                this.editor.getView().update();
-            });
         }
     }
 }

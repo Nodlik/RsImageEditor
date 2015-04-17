@@ -56,16 +56,14 @@ module UI {
             return this.imageCollection.findImage(ids);
         }
 
-        update() {
+        update(image: Core.RsImage = null) {
             if (!this.needRefresh) {
-                var images = this.imageCollection.getImages();
-
-                images.forEach((el: Core.RsImage) => {
-                    this.updateImage(el);
-                });
-
-                this.page.renderInformation();
-                this.initSelectBlock(this.page.getInformationPlace().find('#rsSelect'));
+                if (image == null) {
+                    this.updateImages();
+                }
+                else {
+                    this.updateImage(image);
+                }
             }
             else {
                 this.render();
@@ -78,6 +76,17 @@ module UI {
 
         hideLoading() {
             this.page.getImagePlace().find('.rs-image-selected').find('.rs-image-block').removeClass('loading');
+        }
+
+        private updateImages() {
+            var images = this.imageCollection.getImages();
+
+            images.forEach((el: Core.RsImage) => {
+                this.updateImage(el);
+            });
+
+            this.page.renderInformation();
+            this.initSelectBlock(this.page.getInformationPlace().find('#rsSelect'));
         }
 
         private initSelectBlock($el: JQuery) {

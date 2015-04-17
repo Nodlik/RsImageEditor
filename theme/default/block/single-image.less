@@ -2,7 +2,7 @@
 @import "../lib/mixin";
 
 .rs-single-image {
-  margin: 5px 0 5px 5px;
+  margin: 5px 0 5px 0;
 
   max-width: 100%;
   overflow-x: scroll;
@@ -15,7 +15,7 @@
   .rs-canvas-place {
     position: relative;
     display: inline-block;
-    margin: 5px 20px 5px 5px;
+    margin: 5px 20px 5px 10px;
     .box-shadow(0, 0, 5px, 0, rgba(0, 0, 0, 0.5));
 
     canvas {
@@ -29,7 +29,6 @@
 .rs-singleView-loader {
   position: absolute;
   width: 100%;
-  z-index: 200;
 
   height: @widgetSize;
   color: @lightFontColor;
@@ -53,7 +52,8 @@
   font-size: 90%;
 
   left: 0;
-  top: 15px;
+  top: 0px;
+  .box-shadow(0, 0, 15px, 0, rgba(0, 0, 0, 0.5));
 
-  .background-opacity(@decorationColor, 0.7);
+  .background-opacity(@decorationColor, 0.9);
 }

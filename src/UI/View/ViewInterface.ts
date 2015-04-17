@@ -8,6 +8,7 @@ module UI {
 
         render();
         update();
+        update(image: Core.RsImage);
 
         setImages(images: Core.ImageCollection);
 

@@ -43,9 +43,7 @@ module Modules {
             this.fit = new Fit(this.$el, this.images, this.editor);
 
             this.fit.on('apply', (e) => {
-                this.doAction(
-                    this.createFitActions(e.data.rect, e.data.method, e.data.fitPosition, e.data.isCanCrop)
-                )
+                this.doFitActions(e.data.rect, e.data.method, e.data.fitPosition, e.data.isCanCrop)
             });
         }
 
@@ -53,9 +51,7 @@ module Modules {
             this.crop = new Crop(this.$el, this.images, this.editor);
 
             this.crop.on('apply', (e) => {
-                this.doAction(
-                    this.createCropActions(e.data.size, e.data.fitPosition)
-                )
+                this.doCropActions(e.data.size, e.data.fitPosition);
             });
         }
 
@@ -74,38 +70,29 @@ module Modules {
             }
         }
 
-        private createCropActions(size: Size, position: FitPosition): Promise<Core.RsImage>[] {
+        private doCropActions(size: Size, position: FitPosition) {
             this.editor.getView().showLoading();
 
-            var result: Promise<Core.RsImage>[] = [];
 
             this.editor.selected().forEach((img: Core.RsImage) => {
                     var act = new CropAction(img, 0, 0, size.width, size.height, position);
-                    result.push(img.getActionDispatcher().process(act));
+                    img.getActionDispatcher().process(act).then((image) => {
+                        this.editor.getView().update(image);
+                    });
                 }
             );
-
-            return result;
         }
 
-        private createFitActions(rect: Rect, method: FitMethod, position: FitPosition, isCanCrop: boolean): Promise<Core.RsImage>[] {
+        private doFitActions(rect: Rect, method: FitMethod, position: FitPosition, isCanCrop: boolean) {
             this.editor.getView().showLoading();
-
-            var result: Promise<Core.RsImage>[] = [];
 
             this.editor.selected().forEach((img: Core.RsImage) => {
                     var act = new FitAction(img, rect, method, position, isCanCrop);
-                    result.push(img.getActionDispatcher().process(act));
+                    img.getActionDispatcher().process(act).then((image) => {
+                        this.editor.getView().update(image);
+                    });
                 }
             );
-
-            return result;
-        }
-
-        doAction(actions: Promise<Core.RsImage>[]) {
-            Promise.all(actions).then(() => {
-                this.editor.getView().update();
-            });
         }
 
         html() {
